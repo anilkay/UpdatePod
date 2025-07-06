@@ -23,9 +23,9 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
         _client = new Kubernetes(_configuration);
     }
 
-    public async Task<string> GetPodContainerImageInfo(string namespaceInfo, string podNameStarts, string? containerName = null)
+    public async Task<string> GetPodContainerImageInfo(string namespaceInfo, string podNameStarts, string? containerName = null,CancellationToken ct=default)
     {
-        var pods = await _client.ListNamespacedPodAsync(namespaceInfo);
+        var pods = await _client.ListNamespacedPodAsync(namespaceInfo,cancellationToken:ct);
         var matchedPod = pods.Items
             .FirstOrDefault(p => p.Metadata?.Name != null && p.Metadata.Name.StartsWith(podNameStarts));
 
@@ -49,9 +49,9 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
 
         return container.Image;
     }
-    public async Task<string?> GetPodContainerImageHash(string namespaceInfo, string podNameStarts, string? containerName = null)
+    public async Task<string?> GetPodContainerImageHash(string namespaceInfo, string podNameStarts, string? containerName = null,CancellationToken ct=default)
     {
-        var pods = await _client.ListNamespacedPodAsync(namespaceInfo);
+        var pods = await _client.ListNamespacedPodAsync(namespaceInfo,cancellationToken:ct);
         var matchedPod = pods.Items
             .FirstOrDefault(p => p.Metadata?.Name != null && p.Metadata.Name.StartsWith(podNameStarts));
 
@@ -81,9 +81,9 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
     }
     
 
-    public async Task<string> GetImagePullPolicy(string namespaceInfo, string podNameStarts, string? containerName = null)
+    public async Task<string> GetImagePullPolicy(string namespaceInfo, string podNameStarts, string? containerName = null,CancellationToken ct=default)
     {
-        var pods = await _client.ListNamespacedPodAsync(namespaceInfo);
+        var pods = await _client.ListNamespacedPodAsync(namespaceInfo,cancellationToken:ct);
         var matchedPod = pods.Items
             .FirstOrDefault(p => p.Metadata?.Name != null && p.Metadata.Name.StartsWith(podNameStarts));
 
@@ -104,9 +104,9 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
         return targetContainer.ImagePullPolicy ?? "(default - IfNotPresent)";
     }
 
-    public async Task<string> GetDeploymentFromPod(string namespaceInfo, string podNameStarts)
+    public async Task<string> GetDeploymentFromPod(string namespaceInfo, string podNameStarts, CancellationToken ct=default)
     {
-        var pods = await _client.ListNamespacedPodAsync(namespaceInfo);
+        var pods = await _client.ListNamespacedPodAsync(namespaceInfo, cancellationToken:ct);
         var matchedPod = pods.Items
             .FirstOrDefault(p => p.Metadata?.Name != null && p.Metadata.Name.StartsWith(podNameStarts));
 
@@ -121,7 +121,7 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
             throw new Exception($"No ReplicaSet found for pod '{matchedPod.Metadata.Name}'.");
         }
 
-        var rs = await _client.ReadNamespacedReplicaSetAsync(rsName, namespaceInfo);
+        var rs = await _client.ReadNamespacedReplicaSetAsync(rsName, namespaceInfo, cancellationToken:ct);
         var deploymentName = rs.Metadata.OwnerReferences?.FirstOrDefault(d => d.Kind == "Deployment")?.Name;
 
         if (deploymentName is null)
@@ -132,7 +132,7 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
         return deploymentName;
     }
 
-    public async Task<bool> RestartDeployment(string namespaceInfo, string deployment)
+    public async Task<bool> RestartDeployment(string namespaceInfo, string deployment, CancellationToken ct=default)
     {
         var patchObj = new
         {
@@ -153,16 +153,16 @@ public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
 
         var patch = new V1Patch(patchObj, V1Patch.PatchType.StrategicMergePatch);
 
-        await _client.PatchNamespacedDeploymentAsync(patch, deployment, namespaceInfo);
+        await _client.PatchNamespacedDeploymentAsync(patch, deployment, namespaceInfo, cancellationToken:ct);
         return true;
     }
-    private string? GetImageWithDigest(string ImageId)
+    private string? GetImageWithDigest(string imageId)
     {
-            var index = ImageId.IndexOf("@sha256:", StringComparison.OrdinalIgnoreCase);
+            var index = imageId.IndexOf("@sha256:", StringComparison.OrdinalIgnoreCase);
             if (index == -1)
             {
-                throw new ConstraintException($"Image {ImageId} does not exist");
+                throw new ConstraintException($"Image {imageId} does not exist");
             }
-            return index >= 0 ? ImageId.Substring(index + 1) : null;
+            return index >= 0 ? imageId.Substring(index + 1) : null;
     }
 }

@@ -27,7 +27,7 @@ public class Worker : BackgroundService
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             }
 
-            await UpdatePodImage(workInfo.nameSpace, workInfo.podNameStarts, workInfo.containerName);
+            await UpdatePodImage(workInfo.nameSpace, workInfo.podNameStarts, workInfo.containerName, cancellationToken: stoppingToken);
             
             await Task.Delay(TimeSpan.FromMinutes(workInfo.intervalMinutes), stoppingToken);
         }
@@ -50,9 +50,11 @@ public class Worker : BackgroundService
         
     }
 
-    private async Task UpdatePodImage(string nameSpace, string podNameStarts, string? containerName)
+    private async Task UpdatePodImage(string nameSpace, string podNameStarts, string? containerName, CancellationToken cancellationToken = default)
     {
-        var imagePullPolicy =await  _kubernetesOperations.GetImagePullPolicy(namespaceInfo:nameSpace,podNameStarts:podNameStarts);
+        var imagePullPolicy =await  _kubernetesOperations.GetImagePullPolicy(namespaceInfo:nameSpace,
+            containerName: containerName,
+            podNameStarts:podNameStarts,ct:cancellationToken);
         _logger.LogInformation("Image pull policy: {imagePullPolicy}", imagePullPolicy);
 
         if (imagePullPolicy != "Always")
@@ -60,11 +62,14 @@ public class Worker : BackgroundService
             throw new ApplicationException($"Image pull policy is must be  Always but {imagePullPolicy}");
         }
         
-        var podImageHash=await _kubernetesOperations.GetPodContainerImageHash(namespaceInfo:nameSpace,podNameStarts:podNameStarts);
+        var podImageHash=await _kubernetesOperations.GetPodContainerImageHash(namespaceInfo:nameSpace,podNameStarts:podNameStarts
+            , containerName: containerName,ct:cancellationToken);
         
-        var containerImageName= await _kubernetesOperations.GetPodContainerImageInfo(namespaceInfo:nameSpace,podNameStarts:podNameStarts); 
+        var containerImageName= await _kubernetesOperations.GetPodContainerImageInfo(namespaceInfo:nameSpace,podNameStarts:podNameStarts
+            , containerName: containerName
+            ,ct:cancellationToken); 
         
-        var latestImageHashFromRegistry=await _imageOperations.GetLatestHashFromImage(containerImageName);
+        var latestImageHashFromRegistry=await _imageOperations.GetLatestHashFromImage(containerImageName, ct:cancellationToken);
         
         _logger.LogInformation($"Pod Image hash: {podImageHash} Latest Image " +
                                $"Hash On registry: {latestImageHashFromRegistry}"
@@ -74,9 +79,9 @@ public class Worker : BackgroundService
         {
             var deployment =
                 await _kubernetesOperations.GetDeploymentFromPod(namespaceInfo: nameSpace,
-                    podNameStarts: podNameStarts);
+                    podNameStarts: podNameStarts, ct:cancellationToken);
             
-            var deploymentResult=await _kubernetesOperations.RestartDeployment(namespaceInfo:nameSpace,deployment);
+            var deploymentResult=await _kubernetesOperations.RestartDeployment(namespaceInfo:nameSpace,deployment,ct:cancellationToken);
 
             if (deploymentResult)
             {

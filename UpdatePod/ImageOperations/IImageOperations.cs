@@ -2,5 +2,5 @@ namespace UpdatePod.ImageOperations;
 
 public interface IImageOperations
 {
-    public Task<string> GetLatestHashFromImage(string image);
+    public Task<string> GetLatestHashFromImage(string image, CancellationToken ct = default);
 }
