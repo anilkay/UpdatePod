@@ -1,0 +1,15 @@
+﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "UpdatePod": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "POD_NAMESPACE": "default",
+        "POD_NAME_PREFIX": "apache-deployment",
+        "RESTART_INTERVAL_MINUTES": "1"
+      }
+    }
+  }
+}
