@@ -76,7 +76,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: updatepod
-  namespace: default
+  namespace: your-namespace
 spec:
   replicas: 1
   selector:
@@ -87,6 +87,7 @@ spec:
       labels:
         app: updatepod
     spec:
+      serviceAccountName: updatepod-sa
       containers:
         - name: updatepod
           image: aanilkay/updatepod:latest
@@ -101,6 +102,48 @@ spec:
               value: web
             - name: RESTART_INTERVAL_MINUTES
               value: "10"
+```
+
+---
+
+## 🔐 Minimal Required RBAC Permissions
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: updatepod-sa
+  namespace: your-namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: updatepod-role
+  namespace: your-namespace
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: updatepod-binding
+  namespace: your-namespace
+subjects:
+  - kind: ServiceAccount
+    name: updatepod-sa
+    namespace: your-namespace
+roleRef:
+  kind: Role
+  name: updatepod-role
+  apiGroup: rbac.authorization.k8s.io
 ```
 
 ---
