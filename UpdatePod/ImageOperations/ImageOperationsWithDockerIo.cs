@@ -30,9 +30,10 @@ public class ImageOperationsWithDockerIo: IImageOperations
         var content = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
 
+        //This part is problematic. Needs more research
         var digest = doc.RootElement
-            .GetProperty("images")[0]
             .GetProperty("digest").GetString();
+        
 
         return digest;
     }
