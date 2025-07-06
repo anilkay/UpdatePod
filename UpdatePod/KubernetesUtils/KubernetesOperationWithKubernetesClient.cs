@@ -4,12 +4,12 @@ using k8s.Models;
 
 namespace UpdatePod.KubernetesUtils;
 
-public class KubernestesOperationWithKubernetesClient: IKubernetesOperations
+public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 {
     private readonly KubernetesClientConfiguration _configuration;
     private readonly Kubernetes _client;
 
-    public KubernestesOperationWithKubernetesClient()
+    public KubernetesOperationWithKubernetesClient()
     {
         try
         {
