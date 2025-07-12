@@ -1,4 +1,4 @@
-namespace UpdatePod.KubernetesUtils;
+namespace UpdatePod.Domain.KubernetesUtils;
 
 public interface IKubernetesOperations
 {

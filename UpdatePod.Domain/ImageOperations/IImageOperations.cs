@@ -1,4 +1,4 @@
-namespace UpdatePod.ImageOperations;
+namespace UpdatePod.Domain.ImageOperations;
 
 public interface IImageOperations
 {

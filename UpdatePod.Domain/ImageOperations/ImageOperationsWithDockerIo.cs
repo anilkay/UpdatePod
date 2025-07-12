@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace UpdatePod.ImageOperations;
+namespace UpdatePod.Domain.ImageOperations;
 
 public class ImageOperationsWithDockerIo: IImageOperations
 {

@@ -1,8 +1,6 @@
 using UpdatePod;
-using UpdatePod.ImageOperations;
-using UpdatePod.KubernetesUtils;
-using Microsoft.Extensions.Http;
-
+using UpdatePod.Domain.ImageOperations;
+using UpdatePod.Domain.KubernetesUtils;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHttpClient();

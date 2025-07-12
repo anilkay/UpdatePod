@@ -1,5 +1,5 @@
-using UpdatePod.ImageOperations;
-using UpdatePod.KubernetesUtils;
+using UpdatePod.Domain.ImageOperations;
+using UpdatePod.Domain.KubernetesUtils;
 
 namespace UpdatePod;
 
