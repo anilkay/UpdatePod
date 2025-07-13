@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdatePod", "UpdatePod\Upda
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdatePod.Domain", "UpdatePod.Domain\UpdatePod.Domain.csproj", "{D80C0E19-C5CD-4237-A9C9-84CF85C9C512}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdatePod.Domain.Tests", "UpdatePod.Domain.Tests\UpdatePod.Domain.Tests.csproj", "{2C8176B7-67D1-43FF-9556-DEF990F3FEBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{D80C0E19-C5CD-4237-A9C9-84CF85C9C512}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D80C0E19-C5CD-4237-A9C9-84CF85C9C512}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D80C0E19-C5CD-4237-A9C9-84CF85C9C512}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C8176B7-67D1-43FF-9556-DEF990F3FEBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C8176B7-67D1-43FF-9556-DEF990F3FEBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C8176B7-67D1-43FF-9556-DEF990F3FEBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C8176B7-67D1-43FF-9556-DEF990F3FEBF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
