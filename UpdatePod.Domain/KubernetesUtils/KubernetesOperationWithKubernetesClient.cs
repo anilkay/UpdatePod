@@ -6,21 +6,22 @@ namespace UpdatePod.Domain.KubernetesUtils;
 
 public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 {
-    private readonly KubernetesClientConfiguration _configuration;
+    
     private readonly Kubernetes _client;
 
     public KubernetesOperationWithKubernetesClient()
     {
+        KubernetesClientConfiguration configuration;
         try
         {
-            _configuration = KubernetesClientConfiguration.InClusterConfig();
+            configuration = KubernetesClientConfiguration.InClusterConfig();
         }
         catch
         {
-            _configuration = KubernetesClientConfiguration.BuildDefaultConfig();
+            configuration = KubernetesClientConfiguration.BuildDefaultConfig();
         }
         
-        _client = new Kubernetes(_configuration);
+        _client = new Kubernetes(configuration);
     }
 
     public async Task<string> GetPodContainerImageInfo(string namespaceInfo, string podNameStarts, string? containerName = null,CancellationToken ct=default)
