@@ -5,9 +5,15 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copy csproj files and restore dependencies
 COPY ["UpdatePod/UpdatePod.csproj", "UpdatePod/"]
+COPY ["UpdatePod.Domain/UpdatePod.Domain.csproj", "UpdatePod.Domain/"]
 RUN dotnet restore "UpdatePod/UpdatePod.csproj"
+
+# Copy the rest of the source code
 COPY . .
+
 WORKDIR "/src/UpdatePod"
 RUN dotnet build "UpdatePod.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
