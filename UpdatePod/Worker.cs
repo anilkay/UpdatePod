@@ -70,6 +70,11 @@ public class Worker : BackgroundService
             ,ct:cancellationToken); 
         
         var latestImageHashFromRegistry=await _imageOperations.GetLatestHashFromImage(containerImageName, ct:cancellationToken);
+
+        if (latestImageHashFromRegistry is null)
+        {
+            throw new ApplicationException($"Image {containerName} has not been found in registry.");
+        }
         
         _logger.LogInformation($"Pod Image hash: {podImageHash} Latest Image " +
                                $"Hash On registry: {latestImageHashFromRegistry}"
