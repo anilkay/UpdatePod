@@ -2,21 +2,15 @@ using System.Text.Json;
 
 namespace UpdatePod.Domain.ImageOperations;
 
-public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperations
+public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperationsStrategy
 {
-    public async Task<string?> GetLatestHashFromImage(string image, CancellationToken ct = default)
-    { 
-        var parts = image.Split(':');
-        var repository = parts[0].Replace("docker.io/", "");
-        var tag = parts.Length > 1 ? parts[1] : "latest";
-        return await GetImageDigest(repository, tag, ct);
-    }
+   
     
-    private  async Task<string?> GetImageDigest(string repository, string tag, CancellationToken ct = default)
+    public async Task<string?> GetLatestHash(string repository, string tag, CancellationToken ct = default)
     {
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-
-        var url = $"https://hub.docker.com/v2/repositories/library/{repository}/tags/{tag}";
+        
+        var url = GetUrl(repository, tag);
 
         var response = await httpClient.GetAsync(url, cancellationToken:ct);
         response.EnsureSuccessStatusCode();
@@ -28,4 +22,25 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperatio
 
         return responseAsJson?.digest; 
     }
+
+    private string GetUrl(string imageName, string tag)
+    {
+        var parts = imageName.Split('/');
+
+        string username, repository;
+
+        if (parts.Length == 2)
+        {
+            username = parts[0];
+            repository = parts[1];
+        }
+        else
+        {
+            username = "library";
+            repository = parts[0];
+        }
+
+        return $"https://hub.docker.com/v2/repositories/{username}/{repository}/tags/{tag}";
+    }
+    
 }

@@ -5,7 +5,7 @@ using UpdatePod.Domain.KubernetesUtils;
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IKubernetesOperations, KubernetesOperationWithKubernetesClient>();
-builder.Services.AddSingleton<IImageOperations, ImageOperationsWithDockerIo>();
+builder.Services.AddSingleton<IImageOperations, ImageOperations>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
