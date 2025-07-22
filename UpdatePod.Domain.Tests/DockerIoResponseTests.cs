@@ -9,7 +9,7 @@ public class DockerIoResponseTests
     {
         HttpClient client = new();
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client);
-        var digest= await imageOperations.GetLatestHashFromImage("httpd:2.4");
+        var digest= await imageOperations.GetLatestHashFromImage("docker.io/httpd:2.4");
 
         Assert.NotNull(digest);
         Assert.Equal(71,digest.Length);
@@ -22,7 +22,7 @@ public class DockerIoResponseTests
     {
         HttpClient client = new();
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client);
-        var digest= await imageOperations.GetLatestHashFromImage("aanilkay/updatepod");
+        var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
 
         Assert.NotNull(digest);
         Assert.Equal(71,digest.Length);
