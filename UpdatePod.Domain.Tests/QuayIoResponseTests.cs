@@ -8,7 +8,9 @@ public class QuayIoResponseTests
     public async Task QuayIoResponse_ShouldReturnDigest()
     {
         HttpClient client = new();
-        IImageOperations imageOperations = new ImageOperations.ImageOperations(client);
+        ImageOperationData imageOperationData = new();
+        
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
         var digest= await imageOperations.GetLatestHashFromImage("quay.io/fedora/httpd-24");
 
         Assert.NotNull(digest);

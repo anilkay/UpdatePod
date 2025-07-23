@@ -8,7 +8,9 @@ public class DockerIoResponseTests
     public async Task DockerIoResponse_ShouldReturnDigest()
     {
         HttpClient client = new();
-        IImageOperations imageOperations = new ImageOperations.ImageOperations(client);
+        ImageOperationData imageOperationData = new();
+
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
         var digest= await imageOperations.GetLatestHashFromImage("docker.io/httpd:2.4");
 
         Assert.NotNull(digest);
@@ -21,7 +23,9 @@ public class DockerIoResponseTests
     public async Task DockerIoResponse_ShouldReturnDigestFromUserImamgeWithHash()
     {
         HttpClient client = new();
-        IImageOperations imageOperations = new ImageOperations.ImageOperations(client);
+        ImageOperationData imageOperationData = new();
+
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client,imageOperationData);
         var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
 
         Assert.NotNull(digest);
