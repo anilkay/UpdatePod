@@ -9,6 +9,10 @@ public interface IKubernetesOperations
     
     public Task<string> GetDeploymentFromPod(string namespaceInfo, string podNameStarts,CancellationToken ct = default);
     
+    public Task<string> GetStateFulSetFromPod(string namespaceInfo, string podNameStarts, CancellationToken ct = default);
+    
     public Task<bool> RestartDeployment(string namespaceInfo, string deployment, CancellationToken ct = default);
+    
+    public Task<bool> RestartStateFulSet(string namespaceInfo, string deployment, CancellationToken ct = default);
     
 }

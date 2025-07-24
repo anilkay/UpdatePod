@@ -119,7 +119,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
         var rsName = matchedPod.Metadata.OwnerReferences?.FirstOrDefault(r => r.Kind == "ReplicaSet")?.Name;
         if (rsName is null)
         {
-            throw new Exception($"No ReplicaSet found for pod '{matchedPod.Metadata.Name}'.");
+            throw new KubernetesObjectNotFoundException($"No ReplicaSet found for pod '{matchedPod.Metadata.Name}'.");
         }
 
         var rs = await _client.ReadNamespacedReplicaSetAsync(rsName, namespaceInfo, cancellationToken:ct);
@@ -127,10 +127,31 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (deploymentName is null)
         {
-            throw new Exception($"No Deployment found for ReplicaSet '{rsName}'.");
+            throw new KubernetesObjectNotFoundException($"No Deployment found for ReplicaSet '{rsName}'.");
         }
 
         return deploymentName;
+    }
+
+    public async  Task<string> GetStateFulSetFromPod(string namespaceInfo, string podNameStarts, CancellationToken ct = default)
+    {
+        var pods = await _client.ListNamespacedPodAsync(namespaceInfo, cancellationToken:ct);
+        var matchedPod = pods.Items
+            .FirstOrDefault(p => p.Metadata?.Name != null && p.Metadata.Name.StartsWith(podNameStarts));
+
+        if (matchedPod == null)
+        {
+            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+        }
+        
+        var stName = matchedPod.Metadata.OwnerReferences?.FirstOrDefault(r => r.Kind == "StatefulSet")?.Name;
+        
+        if (stName is null)
+        {
+            throw new Exception($"No StateFulSet found for pod '{matchedPod.Metadata.Name}'.");
+        }
+        
+        return stName;
     }
 
     public async Task<bool> RestartDeployment(string namespaceInfo, string deployment, CancellationToken ct=default)
@@ -157,6 +178,37 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
         await _client.PatchNamespacedDeploymentAsync(patch, deployment, namespaceInfo, cancellationToken:ct);
         return true;
     }
+    public async Task<bool> RestartStateFulSet(string namespaceInfo, string statefulSetName, CancellationToken ct = default)
+    {
+        var patchObj = new
+        {
+            spec = new
+            {
+                template = new
+                {
+                    metadata = new
+                    {
+                        annotations = new Dictionary<string, string>
+                        {
+                            ["kubectl.kubernetes.io/restartedAt"] = DateTime.UtcNow.ToString("o")
+                        }
+                    }
+                }
+            }
+        };
+        
+        var patch = new V1Patch(patchObj, V1Patch.PatchType.StrategicMergePatch);
+        
+        await _client.PatchNamespacedStatefulSetAsync(
+            name: statefulSetName,
+            namespaceParameter: namespaceInfo,
+            body: patch,
+            cancellationToken: ct
+        );
+
+        return true;
+    }
+
     private string? GetImageWithDigest(string imageId)
     {
             var index = imageId.IndexOf("@sha256:", StringComparison.OrdinalIgnoreCase);

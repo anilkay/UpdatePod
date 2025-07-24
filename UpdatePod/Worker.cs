@@ -82,22 +82,44 @@ public class Worker : BackgroundService
 
         if (latestImageHashFromRegistry != podImageHash)
         {
-            var deployment =
-                await _kubernetesOperations.GetDeploymentFromPod(namespaceInfo: nameSpace,
-                    podNameStarts: podNameStarts, ct:cancellationToken);
-            
-            var deploymentResult=await _kubernetesOperations.RestartDeployment(namespaceInfo:nameSpace,deployment,ct:cancellationToken);
-
-            if (deploymentResult)
+            try
             {
-                _logger.LogInformation("Deployment restarted");
+                var deployment =
+                    await _kubernetesOperations.GetDeploymentFromPod(namespaceInfo: nameSpace,
+                        podNameStarts: podNameStarts, ct: cancellationToken);
+                
+                var deploymentResult=await _kubernetesOperations.RestartDeployment(namespaceInfo:nameSpace,deployment,ct:cancellationToken);
+
+                if (deploymentResult)
+                {
+                    _logger.LogInformation("Deployment restarted");
+                }
+
+                else
+                {
+                    _logger.LogInformation("Deployment restart failed");
+                }
             }
 
-            else
-            {
-                _logger.LogInformation("Deployment restart failed");
+            catch (KubernetesObjectNotFoundException)
+            { 
+                var statefulSet = await _kubernetesOperations.GetStateFulSetFromPod(namespaceInfo: nameSpace,
+                   podNameStarts: podNameStarts, ct: cancellationToken);
+        
+                bool statefulSetResult=  await _kubernetesOperations.RestartStateFulSet(namespaceInfo:nameSpace,
+                    deployment:statefulSet,ct:cancellationToken);
+
+                 if (statefulSetResult)
+                 {
+                  _logger.LogInformation("StatefulSet restarted");
+                 }
+
+                else
+                {
+                  _logger.LogInformation("StatefulSet restart failed");
+                }
+              
             }
-            
         }
         
     }
