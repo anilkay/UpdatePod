@@ -11,7 +11,7 @@ public class DockerIoResponseTests
         ImageOperationData imageOperationData = new();
 
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
-        var digest= await imageOperations.GetLatestHashFromImage("docker.io/httpd:2.4");
+        var digest= await imageOperations.GetLatestHashFromImage("docker.io/httpd:2.4:latest");
 
         Assert.NotNull(digest);
         Assert.Equal(71,digest.Length);

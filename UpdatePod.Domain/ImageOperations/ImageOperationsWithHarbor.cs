@@ -12,9 +12,15 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         var url=GetUrl(repository, tag);
 
         httpClient.DefaultRequestHeaders.Accept.Clear();
-        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{imageOperationData.HarborRobotUser}:{imageOperationData.HarborRobotToken}"));
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.oci.image.index.v1+json"));
+        
+        
+        if (imageOperationData.IsHarborUsed())
+        {
+            var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{imageOperationData.HarborRobotUser}:{imageOperationData.HarborRobotToken}"));
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.oci.image.index.v1+json"));
+        }
+        
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.list.v2+json"));
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.v2+json"));
 
@@ -24,9 +30,8 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
             response = await httpClient.GetAsync(url, token);
             response.EnsureSuccessStatusCode();
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            // https başarısız olursa http ile tekrar dene
             var httpsUrl = url.Replace("https://", "http://");
             response = await httpClient.GetAsync(httpsUrl, token);
             response.EnsureSuccessStatusCode();

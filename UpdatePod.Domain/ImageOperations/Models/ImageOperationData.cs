@@ -5,4 +5,10 @@ public class ImageOperationData
     public bool? UseHarbor { get; init; }
     public string? HarborRobotUser { get; init; }
     public string? HarborRobotToken { get; init; }
+
+    internal bool IsHarborUsed()
+    {
+        return UseHarbor ?? false;
+    }
+    
 }

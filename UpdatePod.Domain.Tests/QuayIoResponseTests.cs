@@ -11,7 +11,7 @@ public class QuayIoResponseTests
         ImageOperationData imageOperationData = new();
         
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
-        var digest= await imageOperations.GetLatestHashFromImage("quay.io/fedora/httpd-24");
+        var digest= await imageOperations.GetLatestHashFromImage("quay.io/fedora/httpd-24:latest");
 
         Assert.NotNull(digest);
         Assert.Equal(71,digest.Length);

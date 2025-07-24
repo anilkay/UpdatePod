@@ -18,7 +18,6 @@ public class ImageOperations : IImageOperations
         _registryOperations = new Dictionary<string, IImageOperationsStrategy>(StringComparer.OrdinalIgnoreCase)
         {
             ["docker.io"] = new ImageOperationsWithDockerIo(httpClient),
-            ["quay.io"] = new ImageOperationsWithQuayIo(httpClient),
         };
         _imageOperationData = imageOperationData;
         _imageOperationsStrategyForHarbor = new ImageOperationsWithHarbor(httpClient, imageOperationData);
@@ -30,14 +29,14 @@ public class ImageOperations : IImageOperations
         {
             if (image.Contains(registry, StringComparison.OrdinalIgnoreCase))
             {
-               
-                
                 var imageInfo = ParseImage(image, registry);
                 return _registryOperations[registry].GetLatestHash(imageInfo.repository, imageInfo.tag, ct);
             }
         }
-
-        if (_imageOperationData.UseHarbor.HasValue && _imageOperationData.UseHarbor.Value)
+        
+        var isQuayIoImage=image.Contains("quay.io", StringComparison.OrdinalIgnoreCase);
+        
+        if ( isQuayIoImage || _imageOperationData.IsHarborUsed() )
         {
           var imageInfo=ParseImageForHarbor(image);
           return _imageOperationsStrategyForHarbor.GetLatestHash(imageInfo.repository, imageInfo.tag,ct);
