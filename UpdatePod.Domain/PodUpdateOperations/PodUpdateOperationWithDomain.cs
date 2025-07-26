@@ -4,11 +4,16 @@ using UpdatePod.Domain.KubernetesUtils;
 
 namespace UpdatePod.Domain.PodUpdateOperations;
 
-public class PodUpdateOperationWithDomain: IPodUpdateOperations
+public class PodUpdateOperationWithDomain : IPodUpdateOperations
 {
     private readonly IKubernetesOperations _kubernetesOperations;
     private readonly IImageOperations _imageOperations;
     private readonly ILogger<PodUpdateOperationWithDomain> _logger;
+
+    private const string ImagePullPolicyAlways = "Always";
+    private const string ImageNotFoundMessage = "Image {0} has not been found in registry.";
+    private const string DeploymentRestartFailedMessage = "Deployment restart failed";
+    private const string StatefulSetRestartFailedMessage = "StatefulSet restart failed";
 
     public PodUpdateOperationWithDomain(IKubernetesOperations kubernetesOperations, IImageOperations imageOperations,
         ILogger<PodUpdateOperationWithDomain> logger)
@@ -18,79 +23,100 @@ public class PodUpdateOperationWithDomain: IPodUpdateOperations
         _logger = logger;
     }
     
-    public async  Task UpdatePodImage(string nameSpace, string podNameStarts, string? containerName,
+    public async Task UpdatePodImage(string nameSpace, string podNameStarts, string? containerName,
         CancellationToken cancellationToken = default)
     {
-         var imagePullPolicy =await  _kubernetesOperations.GetImagePullPolicy(namespaceInfo:nameSpace,
-            containerName: containerName,
-            podNameStarts:podNameStarts,ct:cancellationToken);
-        _logger.LogInformation("Image pull policy: {imagePullPolicy}", imagePullPolicy);
+        var imagePullPolicy = await GetImagePullPolicy(nameSpace, podNameStarts, containerName, cancellationToken);
+        ValidateImagePullPolicy(imagePullPolicy);
 
-        if (imagePullPolicy != "Always")
-        {
-            throw new ApplicationException($"Image pull policy is must be  Always but {imagePullPolicy}");
-        }
-        
-        var podImageHash=await _kubernetesOperations.GetPodContainerImageHash(namespaceInfo:nameSpace,podNameStarts:podNameStarts
-            , containerName: containerName,ct:cancellationToken);
-        
-        var containerImageName= await _kubernetesOperations.GetPodContainerImageInfo(namespaceInfo:nameSpace,podNameStarts:podNameStarts
-            , containerName: containerName
-            ,ct:cancellationToken); 
-        
-        var latestImageHashFromRegistry=await _imageOperations.GetLatestHashFromImage(containerImageName, ct:cancellationToken);
+        var podImageHash = await GetPodContainerImageHash(nameSpace, podNameStarts, containerName, cancellationToken);
+        var containerImageName = await GetPodContainerImageInfo(nameSpace, podNameStarts, containerName, cancellationToken);
+        var latestImageHashFromRegistry = await GetLatestImageHash(containerImageName, cancellationToken);
 
-        if (latestImageHashFromRegistry is null)
-        {
-            throw new ApplicationException($"Image {containerName} has not been found in registry.");
-        }
-        
-        _logger.LogInformation($"Pod Image hash: {podImageHash} Latest Image " +
-                               $"Hash On registry: {latestImageHashFromRegistry}"
-            );
+        ValidateLatestImageHash(latestImageHashFromRegistry, containerName);
+        LogImageHashes(podImageHash, latestImageHashFromRegistry);
 
         if (latestImageHashFromRegistry != podImageHash)
         {
-            try
+            await RestartDeploymentOrStatefulSet(nameSpace, podNameStarts, cancellationToken);
+        }
+    }
+
+    private async Task<string> GetImagePullPolicy(string nameSpace, string podNameStarts, string? containerName, CancellationToken cancellationToken)
+    {
+        return await _kubernetesOperations.GetImagePullPolicy(nameSpace, podNameStarts,containerName, cancellationToken);
+    }
+
+    private void ValidateImagePullPolicy(string imagePullPolicy)
+    {
+        if (imagePullPolicy != ImagePullPolicyAlways)
+        {
+            throw new ApplicationException($"Image pull policy must be {ImagePullPolicyAlways} but {imagePullPolicy}");
+        }
+    }
+
+    private async Task<string?> GetPodContainerImageHash(string nameSpace, string podNameStarts, string? containerName, CancellationToken cancellationToken)
+    {
+        return await _kubernetesOperations.GetPodContainerImageHash(nameSpace, podNameStarts, containerName, cancellationToken);
+    }
+
+    private async Task<string> GetPodContainerImageInfo(string nameSpace, string podNameStarts, string? containerName, CancellationToken cancellationToken)
+    {
+        return await _kubernetesOperations.GetPodContainerImageInfo(nameSpace, podNameStarts, containerName, cancellationToken);
+    }
+
+    private async Task<string?> GetLatestImageHash(string containerImageName, CancellationToken cancellationToken)
+    {
+        return await _imageOperations.GetLatestHashFromImage(containerImageName, cancellationToken);
+    }
+
+    private void ValidateLatestImageHash(string? latestImageHashFromRegistry, string? containerName)
+    {
+        if (latestImageHashFromRegistry is null)
+        {
+            throw new ApplicationException(string.Format(ImageNotFoundMessage, containerName));
+        }
+    }
+
+    private void LogImageHashes(string? podImageHash, string? latestImageHashFromRegistry)
+    {
+        _logger.LogInformation($"Pod Image hash: {podImageHash ?? "null"} Latest Image Hash On registry: {latestImageHashFromRegistry ?? "null"}");
+    }
+
+    private async Task RestartDeploymentOrStatefulSet(string nameSpace, string podNameStarts, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var deployment = await _kubernetesOperations.GetDeploymentFromPod(nameSpace, podNameStarts, cancellationToken);
+            var deploymentResult = await _kubernetesOperations.RestartDeployment(nameSpace, deployment, cancellationToken);
+
+            if (deploymentResult)
             {
-                var deployment =
-                    await _kubernetesOperations.GetDeploymentFromPod(namespaceInfo: nameSpace,
-                        podNameStarts: podNameStarts, ct: cancellationToken);
-                
-                var deploymentResult=await _kubernetesOperations.RestartDeployment(namespaceInfo:nameSpace,deployment,ct:cancellationToken);
-
-                if (deploymentResult)
-                {
-                    _logger.LogInformation("Deployment restarted");
-                }
-
-                else
-                {
-                    _logger.LogInformation("Deployment restart failed");
-                }
+                _logger.LogInformation("Deployment restarted");
             }
-
-            catch (KubernetesObjectNotFoundException)
-            { 
-                var statefulSet = await _kubernetesOperations.GetStateFulSetFromPod(namespaceInfo: nameSpace,
-                   podNameStarts: podNameStarts, ct: cancellationToken);
-        
-                var statefulSetResult=  await _kubernetesOperations.RestartStateFulSet(namespaceInfo:nameSpace,
-                    deployment:statefulSet,ct:cancellationToken);
-
-                 if (statefulSetResult)
-                 {
-                  _logger.LogInformation("StatefulSet restarted");
-                 }
-
-                 else
-                 {
-                     _logger.LogInformation("StatefulSet restart failed");
-                 }
-              
+            else
+            {
+                _logger.LogInformation(DeploymentRestartFailedMessage);
             }
         }
-        
+        catch (KubernetesObjectNotFoundException)
+        {
+            await RestartStatefulSet(nameSpace, podNameStarts, cancellationToken);
+        }
     }
-    
+
+    private async Task RestartStatefulSet(string nameSpace, string podNameStarts, CancellationToken cancellationToken)
+    {
+        var statefulSet = await _kubernetesOperations.GetStateFulSetFromPod(nameSpace, podNameStarts, cancellationToken);
+        var statefulSetResult = await _kubernetesOperations.RestartStateFulSet(nameSpace, statefulSet, cancellationToken);
+
+        if (statefulSetResult)
+        {
+            _logger.LogInformation("StatefulSet restarted");
+        }
+        else
+        {
+            _logger.LogInformation(StatefulSetRestartFailedMessage);
+        }
+    }
 }
