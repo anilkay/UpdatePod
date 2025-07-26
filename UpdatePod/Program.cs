@@ -1,6 +1,7 @@
 using UpdatePod;
 using UpdatePod.Domain.ImageOperations;
 using UpdatePod.Domain.KubernetesUtils;
+using UpdatePod.Domain.PodUpdateOperations;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHttpClient();
@@ -21,6 +22,7 @@ builder.Services.AddSingleton<ImageOperationData>(provider =>
 });
 
 builder.Services.AddSingleton<IImageOperations, ImageOperations>();
+builder.Services.AddSingleton<IPodUpdateOperations, PodUpdateOperationWithDomain>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
