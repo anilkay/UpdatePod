@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using UpdatePod.Domain.Utils;
 
 namespace UpdatePod.Domain.ImageOperations;
 
@@ -12,6 +13,9 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         var url=GetUrl(repository, tag);
 
         httpClient.DefaultRequestHeaders.Accept.Clear();
+
+        var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
+            GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(30));
         
         
         if (imageOperationData.IsHarborUsed())
@@ -27,13 +31,13 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         HttpResponseMessage? response = null;
         try
         {
-            response = await httpClient.GetAsync(url, token);
+            response = await httpClient.GetAsync(url, cancelletationTokenWithTimeoutCancellation);
             response.EnsureSuccessStatusCode();
         }
         catch (HttpRequestException ex)
         {
             var httpsUrl = url.Replace("https://", "http://");
-            response = await httpClient.GetAsync(httpsUrl, token);
+            response = await httpClient.GetAsync(httpsUrl, cancelletationTokenWithTimeoutCancellation);
             response.EnsureSuccessStatusCode();
         }
 
@@ -56,5 +60,7 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
 
         return $"https://{firstPart}/v2{secondPartCleaned}/manifests/{tag}";
     }
+
+   
     
 }

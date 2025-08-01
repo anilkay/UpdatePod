@@ -1,4 +1,5 @@
 using System.Text.Json;
+using UpdatePod.Domain.Utils;
 
 namespace UpdatePod.Domain.ImageOperations;
 
@@ -10,9 +11,12 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperatio
     {
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         
+        var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
+            GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(30));
+        
         var url = GetUrl(repository, tag);
 
-        var response = await httpClient.GetAsync(url, cancellationToken:ct);
+        var response = await httpClient.GetAsync(url, cancellationToken: cancelletationTokenWithTimeoutCancellation);
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken: ct);
