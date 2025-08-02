@@ -15,7 +15,7 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         httpClient.DefaultRequestHeaders.Accept.Clear();
 
         var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
-            GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(30));
+            GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
         
         
         if (imageOperationData.IsHarborUsed())
@@ -28,13 +28,13 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.list.v2+json"));
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.v2+json"));
 
-        HttpResponseMessage? response = null;
+        HttpResponseMessage? response;
         try
         {
             response = await httpClient.GetAsync(url, cancelletationTokenWithTimeoutCancellation);
             response.EnsureSuccessStatusCode();
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             var httpsUrl = url.Replace("https://", "http://");
             response = await httpClient.GetAsync(httpsUrl, cancelletationTokenWithTimeoutCancellation);

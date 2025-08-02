@@ -12,12 +12,16 @@ builder.Services.AddSingleton<ImageOperationData>(provider =>
     bool? useHarbor = bool.TryParse(Environment.GetEnvironmentVariable("USE_HARBOR"), out var useHarborResult) ? useHarborResult : null;
     string? harborRobotUser = Environment.GetEnvironmentVariable("HARBOR_ROBOT_USER");
     string? harborRobotToken = Environment.GetEnvironmentVariable("HARBOR_ROBOT_TOKEN");
+    
+    string? imageOperationsTimeoutStr= Environment.GetEnvironmentVariable("IMAGE_OPERATIONS_TIMEOUT");
+    bool isImageOperationTimeoutParsed=int.TryParse(imageOperationsTimeoutStr, out var resultImageOperationTimeout);
 
     return new ImageOperationData()
     {
         UseHarbor = useHarbor,
         HarborRobotUser = harborRobotUser,
         HarborRobotToken = harborRobotToken,
+        ImageOperationsTimeout = isImageOperationTimeoutParsed ? resultImageOperationTimeout : null,
     };
 });
 

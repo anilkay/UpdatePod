@@ -3,7 +3,7 @@ using UpdatePod.Domain.Utils;
 
 namespace UpdatePod.Domain.ImageOperations;
 
-public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperationsStrategy
+public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationData imageOperationData) : IImageOperationsStrategy
 {
    
     
@@ -12,7 +12,7 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient) : IImageOperatio
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         
         var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
-            GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(30));
+            GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
         
         var url = GetUrl(repository, tag);
 
