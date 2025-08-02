@@ -17,7 +17,7 @@ public class ImageOperations : IImageOperations
     {
         _registryOperations = new Dictionary<string, IImageOperationsStrategy>(StringComparer.OrdinalIgnoreCase)
         {
-            ["docker.io"] = new ImageOperationsWithDockerIo(httpClient),
+            ["docker.io"] = new ImageOperationsWithDockerIo(httpClient, imageOperationData),
         };
         _imageOperationData = imageOperationData;
         _imageOperationsStrategyForHarbor = new ImageOperationsWithHarbor(httpClient, imageOperationData);
