@@ -7,6 +7,8 @@ public class ImageOperationData
     public string? HarborRobotToken { get; init; }
     
     public int? ImageOperationsTimeout { get; init; }
+    
+    public string? DockerHubToken { get; init; }
 
     internal bool IsHarborUsed()
     {
