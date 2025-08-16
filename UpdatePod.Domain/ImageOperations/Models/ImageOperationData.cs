@@ -1,4 +1,4 @@
-namespace UpdatePod.Domain.ImageOperations;
+namespace UpdatePod.Domain.ImageOperations.Models;
 
 public class ImageOperationData
 {

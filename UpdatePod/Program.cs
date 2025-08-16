@@ -1,5 +1,6 @@
 using UpdatePod;
 using UpdatePod.Domain.ImageOperations;
+using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.KubernetesUtils;
 using UpdatePod.Domain.PodUpdateOperations;
 

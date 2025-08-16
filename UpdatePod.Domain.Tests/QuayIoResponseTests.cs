@@ -1,4 +1,5 @@
 using UpdatePod.Domain.ImageOperations;
+using UpdatePod.Domain.ImageOperations.Models;
 
 namespace UpdatePod.Domain.Tests;
 
