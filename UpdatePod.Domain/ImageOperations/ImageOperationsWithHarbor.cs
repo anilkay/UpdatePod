@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.Utils;
 
 namespace UpdatePod.Domain.ImageOperations;

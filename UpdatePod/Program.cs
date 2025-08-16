@@ -1,5 +1,6 @@
 using UpdatePod;
 using UpdatePod.Domain.ImageOperations;
+using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.KubernetesUtils;
 using UpdatePod.Domain.PodUpdateOperations;
 
@@ -12,6 +13,7 @@ builder.Services.AddSingleton<ImageOperationData>(provider =>
     bool? useHarbor = bool.TryParse(Environment.GetEnvironmentVariable("USE_HARBOR"), out var useHarborResult) ? useHarborResult : null;
     string? harborRobotUser = Environment.GetEnvironmentVariable("HARBOR_ROBOT_USER");
     string? harborRobotToken = Environment.GetEnvironmentVariable("HARBOR_ROBOT_TOKEN");
+    string? dockerHubToken = Environment.GetEnvironmentVariable("DOCKER_HUB_TOKEN");
     
     string? imageOperationsTimeoutStr= Environment.GetEnvironmentVariable("IMAGE_OPERATIONS_TIMEOUT");
     bool isImageOperationTimeoutParsed=int.TryParse(imageOperationsTimeoutStr, out var resultImageOperationTimeout);
@@ -22,6 +24,7 @@ builder.Services.AddSingleton<ImageOperationData>(provider =>
         HarborRobotUser = harborRobotUser,
         HarborRobotToken = harborRobotToken,
         ImageOperationsTimeout = isImageOperationTimeoutParsed ? resultImageOperationTimeout : null,
+        DockerHubToken = dockerHubToken
     };
 });
 

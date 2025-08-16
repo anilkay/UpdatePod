@@ -1,4 +1,6 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
+using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.Utils;
 
 namespace UpdatePod.Domain.ImageOperations;
@@ -10,6 +12,11 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
     public async Task<string?> GetLatestHash(string repository, string tag, CancellationToken ct = default)
     {
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+        if (!string.IsNullOrWhiteSpace(imageOperationData.DockerHubToken))
+        {
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("JWT", imageOperationData.DockerHubToken);
+        }
         
         var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
             GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
