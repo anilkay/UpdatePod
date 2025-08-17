@@ -61,12 +61,67 @@ docker pull aanilkay/updatepod:latest
       "POD_NAMESPACE": "default",
       "POD_NAME_PREFIX": "my-app",
       "POD_CONTAINER_NAME": "web",
-      "RESTART_INTERVAL_MINUTES": "5"
+      "HARBOR_ROBOT_USER": "robot$yourproject",
+      "HARBOR_ROBOT_TOKEN": "your-harbor-token",
+      "DOCKER_HUB_TOKEN": "your-docker-hub-token"
     }
   }
 }
 ```
+## How to Add Harbor Robot User and Token
 
+To use Harbor robot credentials, follow these steps:
+
+1. **Create a Robot Account** in your Harbor project:
+  - Go to your Harbor project.
+  - Navigate to **Robot Accounts**.
+  - Click **New Robot Account** and set permissions.
+  - Copy the generated username (e.g., `robot$yourproject`) and token.
+
+2. **Add to `launchSettings.json`**:
+  - Set `HARBOR_ROBOT_USER` to the robot username.
+  - Set `HARBOR_ROBOT_TOKEN` to the robot token.
+
+**Example:**
+```json
+"environmentVariables": {
+  "HARBOR_ROBOT_USER": "robot$yourproject",
+  "HARBOR_ROBOT_TOKEN": "your-harbor-token"
+}
+```
+
+> Keep robot credentials secure and do not share them publicly.
+
+## How to get Docker Hub Token
+
+To obtain a Docker Hub token for API authentication, follow these steps:
+
+1. **Send a POST request** to the Docker Hub login endpoint:
+  ```
+  https://hub.docker.com/v2/users/login/
+  ```
+2. **Include your Docker Hub username and password** in the request body as JSON:
+  ```json
+  {
+    "username": "your_dockerhub_username",
+    "password": "your_dockerhub_password"
+  }
+  ```
+3. **Example using `curl`:**
+  ```sh
+  curl -X POST -H "Content-Type: application/json" \
+    -d '{"username": "your_dockerhub_username", "password": "your_dockerhub_password"}' \
+    https://hub.docker.com/v2/users/login/
+  ```
+4. **The response will contain a token**:
+  ```json
+  {
+    "token": "your_dockerhub_token"
+  }
+  ```
+5. **Use this token** as a Bearer token in the `Authorization` header for subsequent Docker Hub API requests.
+
+> **Note:** Keep your token secure and do not share it publicly.
 ---
 
 ## ☸️ Kubernetes Deployment Example
