@@ -1,23 +1,13 @@
 namespace UpdatePod.Domain.ImageOperations.Models;
 
-public class ImageOperationData
+public record ImageOperationData(
+    bool? UseHarbor = null,
+    string? HarborRobotUser = null,
+    string? HarborRobotToken = null,
+    int? ImageOperationsTimeout = null,
+    string? DockerHubToken = null)
 {
-    public bool? UseHarbor { get; init; }
-    public string? HarborRobotUser { get; init; }
-    public string? HarborRobotToken { get; init; }
-    
-    public int? ImageOperationsTimeout { get; init; }
-    
-    public string? DockerHubToken { get; init; }
+    internal bool IsHarborUsed() => UseHarbor ?? false;
 
-    internal bool IsHarborUsed()
-    {
-        return UseHarbor ?? false;
-    }
-
-    internal int GetImageOperationsTimeout()
-    {
-        return ImageOperationsTimeout ?? 30;
-    }
-    
+    internal int GetImageOperationsTimeout() => ImageOperationsTimeout ?? 30;
 }
