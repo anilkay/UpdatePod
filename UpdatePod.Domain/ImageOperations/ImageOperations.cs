@@ -30,21 +30,24 @@ public class ImageOperations : IImageOperations
         {
             if (image.Contains(registry, StringComparison.OrdinalIgnoreCase))
             {
-                var imageInfo = ParseImage(image, registry);
-                return _registryOperations[registry].GetLatestHash(imageInfo.repository, imageInfo.tag, ct);
+                var imageInfoforRegistryOperations = ParseImage(image, registry);
+                return _registryOperations[registry].GetLatestHash(imageInfoforRegistryOperations.repository, imageInfoforRegistryOperations.tag, ct);
             }
         }
         
         var isQuayIoImage=image.Contains("quay.io", StringComparison.OrdinalIgnoreCase);
-        
-        if ( isQuayIoImage || _imageOperationData.IsHarborUsed() )
+
+        if (!isQuayIoImage && !_imageOperationData.IsHarborUsed())
         {
-          var imageInfo=ParseImageForHarbor(image);
-          return _imageOperationsStrategyForHarbor.GetLatestHash(imageInfo.repository, imageInfo.tag,ct);
+            throw new NotSupportedException($"Registry not supported for image: {image}");
         }
+         
+        
+        var imageInfo=ParseImageForHarbor(image);
+        return _imageOperationsStrategyForHarbor.GetLatestHash(imageInfo.repository, imageInfo.tag,ct);
+        
 
 
-        throw new NotSupportedException($"Registry not supported for image: {image}");
     }
 
     private static (string repository, string tag) ParseImage(string image, string registry)

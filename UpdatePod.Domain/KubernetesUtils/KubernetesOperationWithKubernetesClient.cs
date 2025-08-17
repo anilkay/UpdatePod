@@ -209,7 +209,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
         return true;
     }
 
-    private string? GetImageWithDigest(string imageId)
+    private static string? GetImageWithDigest(string imageId)
     {
             var index = imageId.IndexOf("@sha256:", StringComparison.OrdinalIgnoreCase);
             if (index == -1)

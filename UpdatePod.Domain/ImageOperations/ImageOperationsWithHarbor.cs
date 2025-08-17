@@ -15,7 +15,7 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
 
         httpClient.DefaultRequestHeaders.Accept.Clear();
 
-        var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
+        var cancellationTokenWithTimeoutCancellation=HttpClientUtils.
             GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
         
         
@@ -32,13 +32,13 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         HttpResponseMessage? response;
         try
         {
-            response = await httpClient.GetAsync(url, cancelletationTokenWithTimeoutCancellation);
+            response = await httpClient.GetAsync(url, cancellationTokenWithTimeoutCancellation);
             response.EnsureSuccessStatusCode();
         }
         catch (HttpRequestException)
         {
             var httpsUrl = url.Replace("https://", "http://");
-            response = await httpClient.GetAsync(httpsUrl, cancelletationTokenWithTimeoutCancellation);
+            response = await httpClient.GetAsync(httpsUrl, cancellationTokenWithTimeoutCancellation);
             response.EnsureSuccessStatusCode();
         }
 
@@ -48,7 +48,7 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         
     }
     
-    private string GetUrl(string imageName, string tag)
+    private static string GetUrl(string imageName, string tag)
     {
         var parts = imageName.Split('/');
 
