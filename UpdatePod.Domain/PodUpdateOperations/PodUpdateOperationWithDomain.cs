@@ -47,7 +47,7 @@ public class PodUpdateOperationWithDomain : IPodUpdateOperations
         return await _kubernetesOperations.GetImagePullPolicy(nameSpace, podNameStarts,containerName, cancellationToken);
     }
 
-    private void ValidateImagePullPolicy(string imagePullPolicy)
+    private static void ValidateImagePullPolicy(string imagePullPolicy)
     {
         if (imagePullPolicy != ImagePullPolicyAlways)
         {

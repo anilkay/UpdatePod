@@ -18,12 +18,12 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("JWT", imageOperationData.DockerHubToken);
         }
         
-        var cancelletationTokenWithTimeoutCancellation=HttpClientUtils.
+        var cancellationTokenWithTimeoutCancellation=HttpClientUtils.
             GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
         
         var url = GetUrl(repository, tag);
 
-        var response = await httpClient.GetAsync(url, cancellationToken: cancelletationTokenWithTimeoutCancellation);
+        var response = await httpClient.GetAsync(url, cancellationToken: cancellationTokenWithTimeoutCancellation);
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken: ct);
@@ -34,7 +34,7 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
         return responseAsJson?.digest; 
     }
 
-    private string GetUrl(string imageName, string tag)
+    private static  string GetUrl(string imageName, string tag)
     {
         var parts = imageName.Split('/');
 
