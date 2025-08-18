@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using UpdatePod.Domain.ImageOperations.Models;
 
 namespace UpdatePod.Domain.ImageOperations;
@@ -30,8 +25,8 @@ public class ImageOperations : IImageOperations
         {
             if (image.Contains(registry, StringComparison.OrdinalIgnoreCase))
             {
-                var imageInfoforRegistryOperations = ParseImage(image, registry);
-                return _registryOperations[registry].GetLatestHash(imageInfoforRegistryOperations.repository, imageInfoforRegistryOperations.tag, ct);
+                var imageInfoForRegistryOperations = ParseImage(image, registry);
+                return _registryOperations[registry].GetLatestHash(imageInfoForRegistryOperations.repository, imageInfoForRegistryOperations.tag, ct);
             }
         }
         
