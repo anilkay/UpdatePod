@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Polly;
 using UpdatePod.Domain.ImageOperations;
 using UpdatePod.Domain.ImageOperations.Models;
 
@@ -5,10 +7,32 @@ namespace UpdatePod.Domain.Tests;
 
 public class DockerIoResponseTests
 {
+    private static  ServiceProvider? GetServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        
+        services.ConfigureHttpClientDefaults(http =>
+        {
+            http.AddStandardResilienceHandler(options =>
+            {
+                options.Retry.MaxRetryAttempts = 2;
+                options.Retry.Delay = TimeSpan.FromSeconds(5);
+                options.Retry.UseJitter = true;
+                options.Retry.BackoffType = DelayBackoffType.Exponential;
+        
+
+            });
+    
+        });
+        
+        return services.BuildServiceProvider();
+    }
     [Fact]
     public async Task DockerIoResponse_ShouldReturnDigest()
     {
-        HttpClient client = new();
+        await using var provider = GetServiceProvider();
+        HttpClient client = provider!.GetRequiredService<HttpClient>();
         ImageOperationData imageOperationData = new();
 
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
@@ -23,7 +47,11 @@ public class DockerIoResponseTests
     [Fact]
     public async Task DockerIoResponse_ShouldReturnDigestFromUserImamgeWithHash()
     {
-        HttpClient client = new();
+        
+       
+            
+        await using var provider = GetServiceProvider();
+        HttpClient client = provider!.GetRequiredService<HttpClient>();
         ImageOperationData imageOperationData = new();
 
         IImageOperations imageOperations = new ImageOperations.ImageOperations(client,imageOperationData);
@@ -37,7 +65,8 @@ public class DockerIoResponseTests
     [Fact]
     public async Task DockerIoResponseWithToken_ShouldReturnDigestFromToken()
     {
-        HttpClient client = new();
+        await using var provider = GetServiceProvider();
+        HttpClient client = provider!.GetRequiredService<HttpClient>();
         ImageOperationData imageOperationData = new()
         {
             DockerHubToken = "YourLegitJwtToken" // :)
@@ -54,7 +83,9 @@ public class DockerIoResponseTests
     [Fact]
     public async Task DockerIoResponseWithToken_ShouldReturnNotFound()
     {
-        HttpClient client = new();
+        await using var provider = GetServiceProvider();
+        HttpClient client = provider!.GetRequiredService<HttpClient>();
+        
         ImageOperationData imageOperationData = new()
         {
             DockerHubToken = "sadasdasdasdasd"
