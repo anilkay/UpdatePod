@@ -32,7 +32,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (matchedPod == null)
         {
-            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+            throw new ConstraintException(Msg.PodNotFound(namespaceInfo, podNameStarts));
         }
 
         if (containerName is null)
@@ -45,7 +45,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (container is null)
         {
-            throw new ConstraintException($"Container '{containerName}' not found in pod '{matchedPod.Metadata.Name}'.");
+            throw new ConstraintException(Msg.ContainerNotFound(name: containerName, pod: matchedPod.Metadata.Name));
         }
 
         return container.Image;
@@ -58,7 +58,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (matchedPod == null)
         {
-            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+            throw new ConstraintException(Msg.PodNotFound(namespaceInfo, podNameStarts));
         }
 
         V1ContainerStatus? targetContainer;
@@ -75,7 +75,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (targetContainer == null)
         {
-            throw new ConstraintException($"Container '{containerName}' not found in pod '{matchedPod.Metadata.Name}'.");
+            throw new ConstraintException(Msg.ContainerNotFound(name: containerName ?? "", pod: matchedPod.Metadata.Name));
         }
 
         return GetImageWithDigest(targetContainer.ImageID);
@@ -90,7 +90,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (matchedPod == null)
         {
-            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+            throw new ConstraintException(Msg.PodNotFound(namespaceInfo, podNameStarts));
         }
 
         var targetContainer = containerName is null
@@ -99,10 +99,10 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (targetContainer == null)
         {
-            throw new ConstraintException($"Container '{containerName}' not found in pod '{matchedPod.Metadata.Name}'.");
+            throw new ConstraintException(Msg.ContainerNotFound(name: containerName ?? "", pod: matchedPod.Metadata.Name));
         }
 
-        return targetContainer.ImagePullPolicy ?? "(default - IfNotPresent)";
+        return targetContainer.ImagePullPolicy ?? Msg.DefaultIfNotPresent;
     }
 
     public async Task<string> GetDeploymentFromPod(string namespaceInfo, string podNameStarts, CancellationToken ct=default)
@@ -113,13 +113,13 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (matchedPod == null)
         {
-            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+            throw new ConstraintException( Msg.PodNotFound(namespaceInfo,podNameStarts));
         }
 
         var rsName = matchedPod.Metadata.OwnerReferences?.FirstOrDefault(r => r.Kind == "ReplicaSet")?.Name;
         if (rsName is null)
         {
-            throw new KubernetesObjectNotFoundException($"No ReplicaSet found for pod '{matchedPod.Metadata.Name}'.");
+            throw new KubernetesObjectNotFoundException(Msg.ReplicaSetNotFound(matchedPod.Metadata.Name));
         }
 
         var rs = await _client.ReadNamespacedReplicaSetAsync(rsName, namespaceInfo, cancellationToken:ct);
@@ -127,7 +127,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (deploymentName is null)
         {
-            throw new KubernetesObjectNotFoundException($"No Deployment found for ReplicaSet '{rsName}'.");
+            throw new KubernetesObjectNotFoundException(Msg.DeploymentNotFound(rsName));
         }
 
         return deploymentName;
@@ -141,14 +141,14 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (matchedPod == null)
         {
-            throw new ConstraintException($"No pod found starting with '{podNameStarts}' in namespace '{namespaceInfo}'.");
+            throw new ConstraintException( Msg.PodNotFound(namespaceInfo, podNameStarts));
         }
         
         var stName = matchedPod.Metadata.OwnerReferences?.FirstOrDefault(r => r.Kind == "StatefulSet")?.Name;
         
         if (stName is null)
         {
-            throw new Exception($"No StateFulSet found for pod '{matchedPod.Metadata.Name}'.");
+            throw new Exception(Msg.StatefulSetNotFound(matchedPod.Metadata.Name));
         }
         
         return stName;
@@ -218,4 +218,25 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
             }
             return index >= 0 ? imageId.Substring(index + 1) : null;
     }
+    
+    private static class Msg
+    {
+        public static string PodNotFound(string ns, string starts) =>
+            $"No pod found starting with '{starts}' in namespace '{ns}'.";
+
+        public static string ContainerNotFound(string name, string pod) =>
+            $"Container '{name}' not found in pod '{pod}'.";
+
+        public static string ReplicaSetNotFound(string pod) =>
+            $"No ReplicaSet found for pod '{pod}'.";
+
+        public static string DeploymentNotFound(string rs) =>
+            $"No Deployment found for ReplicaSet '{rs}'.";
+
+        public static string StatefulSetNotFound(string pod) =>
+            $"No StateFulSet found for pod '{pod}'.";
+
+        public const string DefaultIfNotPresent = "(default - IfNotPresent)";
+    }
+    
 }
