@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.Utils;
@@ -7,7 +8,6 @@ namespace UpdatePod.Domain.ImageOperations;
 
 public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationData imageOperationData) : IImageOperationsStrategy
 {
-   
     
     public async Task<string?> GetLatestHash(string repository, string tag, CancellationToken ct = default)
     {
@@ -26,12 +26,10 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
         var response = await httpClient.GetAsync(url, cancellationToken: cancellationTokenWithTimeoutCancellation);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync(cancellationToken: ct);
-        
+        var content = await response.Content.ReadFromJsonAsync<DockerIoImageResponseModels>(cancellationToken: cancellationTokenWithTimeoutCancellation);
         //This part still problematic. Still needs research. 
-        var responseAsJson = JsonSerializer.Deserialize<DockerIoImageResponseModels>(content);
-
-        return responseAsJson?.digest; 
+        
+        return content?.digest; 
     }
 
     private static  string GetUrl(string imageName, string tag)
