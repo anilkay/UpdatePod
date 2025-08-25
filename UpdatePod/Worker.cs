@@ -1,5 +1,3 @@
-using UpdatePod.Domain.ImageOperations;
-using UpdatePod.Domain.KubernetesUtils;
 using UpdatePod.Domain.PodUpdateOperations;
 
 namespace UpdatePod;
@@ -7,15 +5,11 @@ namespace UpdatePod;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly IKubernetesOperations _kubernetesOperations;
-    private readonly IImageOperations _imageOperations;
     private readonly IPodUpdateOperations _podUpdateOperations;
 
-    public Worker(ILogger<Worker> logger, IKubernetesOperations kubernetesOperations, IImageOperations imageOperations, IPodUpdateOperations podUpdateOperations)
+    public Worker(ILogger<Worker> logger, IPodUpdateOperations podUpdateOperations)
     {
         _logger = logger;
-        _kubernetesOperations = kubernetesOperations;
-        _imageOperations = imageOperations;
         _podUpdateOperations = podUpdateOperations;
     }
 
