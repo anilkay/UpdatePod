@@ -30,13 +30,13 @@ public class Worker : BackgroundService
         }
     }
 
-    private (string nameSpace, string podNameStarts, int intervalMinutes, string? containerName) GetInfoFromEnvironment()
+    private static (string nameSpace, string podNameStarts, int intervalMinutes, string? containerName) GetInfoFromEnvironment()
     {
         var namespaceInfo = Environment.GetEnvironmentVariable("POD_NAMESPACE") 
-                            ?? throw new Exception("POD_NAMESPACE env var is missing.");
+                            ?? throw new ArgumentException("POD_NAMESPACE env var is missing.");
 
         var podNameStarts = Environment.GetEnvironmentVariable("POD_NAME_PREFIX") 
-                            ?? throw new Exception("POD_NAME_PREFIX env var is missing.");
+                            ?? throw new ArgumentException("POD_NAME_PREFIX env var is missing.");
 
         var containerName = Environment.GetEnvironmentVariable("POD_CONTAINER_NAME"); 
         

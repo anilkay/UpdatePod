@@ -43,7 +43,7 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         }
 
         var canGetHeader = response.Headers.TryGetValues("docker-content-digest", out var digest);
-        return !canGetHeader ? null : digest?.ToList().FirstOrDefault();
+        return !canGetHeader ? null : digest.FirstOrDefault();
    
         
     }

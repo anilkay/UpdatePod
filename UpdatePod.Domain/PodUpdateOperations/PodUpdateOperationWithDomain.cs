@@ -51,7 +51,7 @@ public class PodUpdateOperationWithDomain : IPodUpdateOperations
     {
         if (imagePullPolicy != ImagePullPolicyAlways)
         {
-            throw new ApplicationException($"Image pull policy must be {ImagePullPolicyAlways} but {imagePullPolicy}");
+            throw new InvalidImagePullPolicyException( ImagePullPolicyAlways, imagePullPolicy);
         }
     }
 
@@ -70,7 +70,7 @@ public class PodUpdateOperationWithDomain : IPodUpdateOperations
         return await _imageOperations.GetLatestHashFromImage(containerImageName, cancellationToken);
     }
 
-    private void ValidateLatestImageHash(string? latestImageHashFromRegistry, string? containerName)
+    private static void ValidateLatestImageHash(string? latestImageHashFromRegistry, string? containerName)
     {
         if (latestImageHashFromRegistry is null)
         {

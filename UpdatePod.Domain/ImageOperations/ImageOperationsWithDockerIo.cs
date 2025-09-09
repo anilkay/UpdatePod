@@ -8,7 +8,7 @@ namespace UpdatePod.Domain.ImageOperations;
 public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationData imageOperationData) : IImageOperationsStrategy
 {
     
-    public async Task<string?> GetLatestHash(string repository, string tag, CancellationToken ct = default)
+    public async Task<string?> GetLatestHash(string repository, string tag, CancellationToken token = default)
     {
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
@@ -18,7 +18,7 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
         }
         
         var cancellationTokenWithTimeoutCancellation=HttpClientUtils.
-            GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
+            GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
         
         var url = GetUrl(repository, tag);
 
