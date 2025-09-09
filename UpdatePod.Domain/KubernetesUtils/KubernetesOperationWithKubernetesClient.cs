@@ -148,7 +148,7 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
         
         if (stName is null)
         {
-            throw new Exception(Msg.StatefulSetNotFound(matchedPod.Metadata.Name));
+            throw new KubernetesObjectNotFoundException(Msg.StatefulSetNotFound(matchedPod.Metadata.Name));
         }
         
         return stName;
