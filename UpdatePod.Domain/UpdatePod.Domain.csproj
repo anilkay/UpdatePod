@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <!-- Microsoft.Extensions.Logging.Abstractions ships with the net11.0 targeting pack (NU1510). -->
     <ItemGroup>
       <PackageReference Include="KubernetesClient" Version="17.0.14" />
     </ItemGroup>
