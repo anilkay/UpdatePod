@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-UpdatePod-53e2e36b-6ea3-43e8-87f8-e14a8b3c8bb6</UserSecretsId>
@@ -9,9 +9,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.6" />
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="11.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
     </ItemGroup>
 
     <ItemGroup>
