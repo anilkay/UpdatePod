@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using UpdatePod.Domain.ImageOperations;
@@ -7,6 +8,29 @@ namespace UpdatePod.Domain.Tests;
 
 public class DockerIoResponseTests
 {
+    private sealed class UnauthorizedHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+    }
+
+    private sealed class StubHandler(HttpStatusCode statusCode, string responseBody) : HttpMessageHandler
+    {
+        public string? AuthorizationScheme { get; private set; }
+        public string? AuthorizationParameter { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            AuthorizationScheme = request.Headers.Authorization?.Scheme;
+            AuthorizationParameter = request.Headers.Authorization?.Parameter;
+
+            return Task.FromResult(new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(responseBody)
+            });
+        }
+    }
+
     private static  ServiceProvider? GetServiceProvider()
     {
         var services = new ServiceCollection();
@@ -63,39 +87,40 @@ public class DockerIoResponseTests
     }
 
     [Fact]
-    public async Task DockerIoResponseWithToken_ShouldReturnDigestFromToken()
+    public async Task DockerIoResponseWithToken_ShouldSendTokenAndReturnDigest()
     {
-        await using var provider = GetServiceProvider();
-        HttpClient client = provider!.GetRequiredService<HttpClient>();
+        const string digest = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        using var handler = new StubHandler(HttpStatusCode.OK, $$"""{"digest":"{{digest}}"}""");
+        using var client = new HttpClient(handler);
+
         ImageOperationData imageOperationData = new()
         {
-            DockerHubToken = "YourLegitJwtToken" // :)
+            DockerHubToken = "YourLegitJwtToken"
         };
 
-        IImageOperations imageOperations = new ImageOperations.ImageOperations(client,imageOperationData);
-        var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
 
-        Assert.NotNull(digest);
-        Assert.Equal(71,digest.Length);
-        Assert.Contains("sha", digest);
+        var result = await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
+
+        Assert.Equal(digest, result);
+        Assert.Equal("JWT", handler.AuthorizationScheme);
+        Assert.Equal("YourLegitJwtToken", handler.AuthorizationParameter);
     }
 
     [Fact]
-    public async Task DockerIoResponseWithToken_ShouldReturnNotFound()
+    public async Task DockerIoResponseWithInvalidToken_ShouldThrow()
     {
-        await using var provider = GetServiceProvider();
-        HttpClient client = provider!.GetRequiredService<HttpClient>();
-        
+        using var client = new HttpClient(new UnauthorizedHandler());
+
         ImageOperationData imageOperationData = new()
         {
             DockerHubToken = "sadasdasdasdasd"
         };
-        
-        await Assert.ThrowsAsync<HttpRequestException>( async () =>
-        {
-            IImageOperations imageOperations = new ImageOperations.ImageOperations(client,imageOperationData);
-            var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
-        });
+
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod"));
     }
     
 }
