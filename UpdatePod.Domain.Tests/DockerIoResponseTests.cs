@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using UpdatePod.Domain.ImageOperations;
@@ -7,6 +8,12 @@ namespace UpdatePod.Domain.Tests;
 
 public class DockerIoResponseTests
 {
+    private sealed class UnauthorizedHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+    }
+
     private static  ServiceProvider? GetServiceProvider()
     {
         var services = new ServiceCollection();
@@ -81,21 +88,19 @@ public class DockerIoResponseTests
     }
 
     [Fact]
-    public async Task DockerIoResponseWithToken_ShouldReturnNotFound()
+    public async Task DockerIoResponseWithInvalidToken_ShouldThrow()
     {
-        await using var provider = GetServiceProvider();
-        HttpClient client = provider!.GetRequiredService<HttpClient>();
-        
+        using var client = new HttpClient(new UnauthorizedHandler());
+
         ImageOperationData imageOperationData = new()
         {
             DockerHubToken = "sadasdasdasdasd"
         };
-        
-        await Assert.ThrowsAsync<HttpRequestException>( async () =>
-        {
-            IImageOperations imageOperations = new ImageOperations.ImageOperations(client,imageOperationData);
-            var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
-        });
+
+        IImageOperations imageOperations = new ImageOperations.ImageOperations(client, imageOperationData);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod"));
     }
     
 }
