@@ -15,10 +15,9 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
 
         httpClient.DefaultRequestHeaders.Accept.Clear();
 
-        var cancellationTokenWithTimeoutCancellation=HttpClientUtils.
-            GenerateCancellationTokenWithTimeout(token, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
-        
-        
+        using var timeoutCts = HttpClientUtils.CreateTimeoutTokenSource(
+            token, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
+
         if (imageOperationData.IsHarborUsed())
         {
             var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{imageOperationData.HarborRobotUser}:{imageOperationData.HarborRobotToken}"));
@@ -32,13 +31,13 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         HttpResponseMessage? response;
         try
         {
-            response = await httpClient.GetAsync(url, cancellationTokenWithTimeoutCancellation);
+            response = await httpClient.GetAsync(url, timeoutCts.Token);
             response.EnsureSuccessStatusCode();
         }
         catch (HttpRequestException)
         {
             var httpsUrl = url.Replace("https://", "http://");
-            response = await httpClient.GetAsync(httpsUrl, cancellationTokenWithTimeoutCancellation);
+            response = await httpClient.GetAsync(httpsUrl, timeoutCts.Token);
             response.EnsureSuccessStatusCode();
         }
 
