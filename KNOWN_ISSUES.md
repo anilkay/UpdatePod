@@ -2,9 +2,11 @@
 
 > Reviewed on **2026-11-15** against `main` (`402a1ad`, after the .NET 11 upgrade).
 >
-> The .NET 11 migration itself is complete: a clean Release build has **0 warnings / 0 errors**, all **5 tests pass**, and CI builds multi-arch images. This document covers the remaining security, reliability, correctness, CI, and documentation issues found during the review.
+> The .NET 11 migration itself is complete: a clean Release build has **0 warnings / 0 errors**, the test suite passes, and CI builds multi-arch images. This document covers the remaining security, reliability, correctness, CI, and documentation issues found during the review.
 >
 > The README marks the tool as **not for production**. The items below matter if that changes, or if the tool runs unattended for long periods.
+>
+> **Update:** M1 and M7 were fixed in the same PR that adds this document. Their entries are kept for context and marked **Fixed**.
 
 ## Severity
 
@@ -20,13 +22,13 @@
 | --- | --- | --- | --- |
 | H1 | High | Security | Harbor HTTPS failures silently retry over HTTP with Basic credentials |
 | H2 | High | Reliability | Any background-loop exception stops the whole host |
-| M1 | Medium | Reliability | Timeout `CancellationTokenSource`s are never disposed |
+| M1 | Medium | Reliability | ✅ Fixed in this PR — timeout `CancellationTokenSource`s are disposed |
 | M2 | Medium | Reliability | Singleton captures one `HttpClient`, defeating handler/DNS rotation |
 | M3 | Medium | Correctness/Security | Shared `HttpClient` default headers are mutated per call and can leak between registries |
 | M4 | Medium | Reliability | Pod/container statuses are assumed to be non-null |
 | M5 | Medium | Correctness | "First pod whose name starts with…" is nondeterministic |
 | M6 | Medium | Correctness | Harbor URL/tag construction is string-replace based and breaks on valid names |
-| M7 | Medium | Reliability | Numeric environment variables are not validated |
+| M7 | Medium | Reliability | ✅ Fixed in this PR — environment variables are validated at startup |
 | M8 | Medium | CI | Remaining tests call live Docker Hub/Quay and can block image publishing |
 | M9 | Medium | CI | Dockerfile changes are not built on pull requests |
 | M10 | Medium | Kubernetes | No retry/backoff for Kubernetes API calls |
@@ -67,9 +69,11 @@ The worker loop has no per-iteration exception handling. `BackgroundServiceExcep
 
 ## Medium
 
-### M1. Timeout `CancellationTokenSource`s are never disposed
+### M1. Timeout `CancellationTokenSource`s were not disposed (fixed in this PR)
 
 **File:** `UpdatePod.Domain/Utils/HttpClientUtils.cs:5-9`
+
+**Status:** Fixed in this PR. `HttpClientUtils.CreateTimeoutTokenSource` now returns a disposable linked source, both registry strategies dispose it with `using`, and non-positive timeouts are rejected. Tests cover timeout, parent cancellation, and invalid values.
 
 Every call creates a `CancellationTokenSource(timeout)` and a linked CTS, returns only the token, and disposes neither:
 
@@ -147,9 +151,11 @@ When the image has no tag, `ParseImageForHarbor` uses the last path segment as t
 
 **Fix:** parse the image reference once (registry, repository, tag/digest) and build the URL with `Uri`/`UriBuilder`; default an omitted tag to `latest`. Add tests for registry-with-port, nested paths, and missing tags.
 
-### M7. Numeric environment variables are not validated
+### M7. Numeric environment variables were not validated (fixed in this PR)
 
 **Files:** `UpdatePod/Worker.cs:43-45`, `UpdatePod/Program.cs:34-35`, `UpdatePod.Domain/ImageOperations/Models/ImageOperationData.cs:10-12`
+
+**Status:** Fixed in this PR. Environment parsing is centralized in `EnvironmentConfiguration`; `PodUpdateOptions.FromEnvironment` and `ImageOperationData.FromEnvironment` validate required values, positive integers, and booleans before the host starts. Tests cover defaults, trimming, and invalid values.
 
 `RESTART_INTERVAL_MINUTES` is parsed with `int.TryParse` and used directly:
 
@@ -263,10 +269,14 @@ Add a license if the repository or the published image is meant to be reused pub
 ## Suggested order of work
 
 1. **H1** (stop the plaintext credential fallback) and **H2** (keep the worker alive).
-2. **M7** (validate env vars) and **M1** (dispose the timeout sources).
-3. **M2/M3** (own the HTTP client/headers per request) and **M10** (Kubernetes retries).
-4. **M4/M5/M6** (pod selection and image-reference parsing) plus deterministic tests (**M8**).
-5. **M9**, **M11**, and the Low items as hardening/documentation work.
+2. **M2/M3** (own the HTTP client/headers per request) and **M10** (Kubernetes retries).
+3. **M4/M5/M6** (pod selection and image-reference parsing) plus deterministic tests (**M8**).
+4. **M9**, **M11**, and the Low items as hardening/documentation work.
+
+## Resolved in this PR
+
+- **M1** — `HttpClientUtils.CreateTimeoutTokenSource` returns a disposable linked source; both registry strategies dispose it with `using`; non-positive timeouts are rejected. Tests cover timeout, parent cancellation, and invalid values.
+- **M7** — Environment parsing is centralized in `EnvironmentConfiguration`; `PodUpdateOptions.FromEnvironment` and `ImageOperationData.FromEnvironment` validate required values, positive integers, and booleans before the host starts. Tests cover defaults, trimming, and invalid values.
 
 ## Already addressed during the .NET 11 upgrade
 
