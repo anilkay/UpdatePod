@@ -17,15 +17,15 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("JWT", imageOperationData.DockerHubToken);
         }
         
-        var cancellationTokenWithTimeoutCancellation=HttpClientUtils.
-            GenerateCancellationTokenWithTimeout(ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
-        
+        using var timeoutCts = HttpClientUtils.CreateTimeoutTokenSource(
+            ct, TimeSpan.FromSeconds(imageOperationData.GetImageOperationsTimeout()));
+
         var url = GetUrl(repository, tag);
 
-        var response = await httpClient.GetAsync(url, cancellationToken: cancellationTokenWithTimeoutCancellation);
+        var response = await httpClient.GetAsync(url, cancellationToken: timeoutCts.Token);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadFromJsonAsync<DockerIoImageResponseModels>(cancellationToken: cancellationTokenWithTimeoutCancellation);
+        var content = await response.Content.ReadFromJsonAsync<DockerIoImageResponseModels>(cancellationToken: timeoutCts.Token);
         //This part still problematic. Still needs research. 
         
         return content?.digest; 

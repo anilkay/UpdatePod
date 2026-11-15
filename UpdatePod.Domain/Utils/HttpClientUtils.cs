@@ -1,10 +1,20 @@
 namespace UpdatePod.Domain.Utils;
 
-public static  class HttpClientUtils
+public static class HttpClientUtils
 {
-    public static  CancellationToken GenerateCancellationTokenWithTimeout(CancellationToken cancellationToken, TimeSpan timeout)
+    /// <summary>
+    /// Creates a linked token source that is cancelled when <paramref name="cancellationToken"/>
+    /// is cancelled or after <paramref name="timeout"/>. The caller owns and must dispose it.
+    /// </summary>
+    public static CancellationTokenSource CreateTimeoutTokenSource(CancellationToken cancellationToken, TimeSpan timeout)
     {
-        var cts = new CancellationTokenSource(timeout);
-        return CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token).Token;
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "Timeout must be greater than zero.");
+        }
+
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(timeout);
+        return cts;
     }
 }
