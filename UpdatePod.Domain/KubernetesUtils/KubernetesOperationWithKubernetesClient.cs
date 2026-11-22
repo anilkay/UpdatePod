@@ -4,7 +4,7 @@ using k8s.Models;
 
 namespace UpdatePod.Domain.KubernetesUtils;
 
-public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
+public class KubernetesOperationWithKubernetesClient : IKubernetesOperations, IDisposable
 {
     
     private readonly Kubernetes _client;
@@ -65,12 +65,12 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         if (containerName is null)
         {
-            targetContainer = matchedPod.Status.ContainerStatuses.FirstOrDefault();
+            targetContainer = matchedPod.Status?.ContainerStatuses?.FirstOrDefault();
         }
         else
         {
-            targetContainer = matchedPod.Status.ContainerStatuses
-                .FirstOrDefault(c => c.Name.Equals(containerName, StringComparison.OrdinalIgnoreCase));
+            targetContainer = matchedPod.Status?.ContainerStatuses
+                ?.FirstOrDefault(c => string.Equals(c.Name, containerName, StringComparison.OrdinalIgnoreCase));
         }
 
         if (targetContainer == null)
@@ -156,48 +156,14 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
     public async Task<bool> RestartDeployment(string namespaceInfo, string deployment, CancellationToken ct=default)
     {
-        var patchObj = new
-        {
-            spec = new
-            {
-                template = new
-                {
-                    metadata = new
-                    {
-                        annotations = new Dictionary<string, string>
-                        {
-                            ["kubectl.kubernetes.io/restartedAt"] = DateTime.UtcNow.ToString("o")
-                        }
-                    }
-                }
-            }
-        };
-
-        var patch = new V1Patch(patchObj, V1Patch.PatchType.StrategicMergePatch);
+        var patch = CreateRestartPatch();
 
         await _client.PatchNamespacedDeploymentAsync(patch, deployment, namespaceInfo, cancellationToken:ct);
         return true;
     }
     public async Task<bool> RestartStateFulSet(string namespaceInfo, string statefulSetName, CancellationToken ct = default)
     {
-        var patchObj = new
-        {
-            spec = new
-            {
-                template = new
-                {
-                    metadata = new
-                    {
-                        annotations = new Dictionary<string, string>
-                        {
-                            ["kubectl.kubernetes.io/restartedAt"] = DateTime.UtcNow.ToString("o")
-                        }
-                    }
-                }
-            }
-        };
-        
-        var patch = new V1Patch(patchObj, V1Patch.PatchType.StrategicMergePatch);
+        var patch = CreateRestartPatch();
         
         await _client.PatchNamespacedStatefulSetAsync(
             name: statefulSetName,
@@ -208,6 +174,22 @@ public class KubernetesOperationWithKubernetesClient: IKubernetesOperations
 
         return true;
     }
+
+    private static V1Patch CreateRestartPatch()
+    {
+        var annotations = new Dictionary<string, string>
+        {
+            ["kubectl.kubernetes.io/restartedAt"] = DateTime.UtcNow.ToString("o")
+        };
+        var metadata = new { annotations };
+        var template = new { metadata };
+        var patchObject = new { spec = new { template } };
+
+        return new V1Patch(patchObject, V1Patch.PatchType.StrategicMergePatch);
+    }
+
+    public void Dispose() => _client.Dispose();
+
 
     private static string? GetImageWithDigest(string imageId)
     {

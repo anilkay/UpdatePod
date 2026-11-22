@@ -173,7 +173,7 @@ When the image has no tag, `ParseImageForHarbor` uses the last path segment as t
 Three tests still call live registries:
 
 - `DockerIoResponse_ShouldReturnDigest`
-- `DockerIoResponse_ShouldReturnDigestFromUserImamgeWithHash`
+- `DockerIoResponse_ShouldReturnDigestFromUserImageWithHash`
 - `QuayIoResponse_ShouldReturnDigest`
 
 They can fail on rate limits, network restrictions, registry outages, or changed public images. The `docker` job depends on the test job, so an external-service failure blocks image publishing. The token/invalid-token tests are deterministic now, but the suite as a whole is not.

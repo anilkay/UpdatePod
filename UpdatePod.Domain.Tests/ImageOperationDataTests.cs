@@ -54,6 +54,7 @@ public class ImageOperationDataTests
     [InlineData("0")]
     [InlineData("-5")]
     [InlineData("abc")]
+    [InlineData("4294968")] // one second past the CancelAfter limit
     public void FromEnvironment_ThrowsWhenTimeoutIsInvalid(string value)
     {
         var env = new Dictionary<string, string?> { ["IMAGE_OPERATIONS_TIMEOUT"] = value };
@@ -62,6 +63,18 @@ public class ImageOperationDataTests
             () => ImageOperationData.FromEnvironment(Get(env)));
 
         Assert.Contains("IMAGE_OPERATIONS_TIMEOUT", ex.Message);
+    }
+
+    [Fact]
+    public void FromEnvironment_AcceptsMaximumTimeout()
+    {
+        var env = new Dictionary<string, string?> { ["IMAGE_OPERATIONS_TIMEOUT"] = "4294967" };
+
+        var data = ImageOperationData.FromEnvironment(Get(env));
+
+        Assert.Equal(4294967, data.ImageOperationsTimeout);
+        using var cts = Utils.HttpClientUtils.CreateTimeoutTokenSource(
+            CancellationToken.None, TimeSpan.FromSeconds(data.ImageOperationsTimeout!.Value));
     }
 
     private static Func<string, string?> Get(Dictionary<string, string?> env)

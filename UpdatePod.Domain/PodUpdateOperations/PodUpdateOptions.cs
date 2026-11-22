@@ -8,12 +8,18 @@ public sealed record PodUpdateOptions(
     string? ContainerName,
     int IntervalMinutes)
 {
+    private const int DefaultRestartIntervalMinutes = 10;
+
+    // Larger values make the worker's Task.Delay throw.
+    internal static readonly int MaxRestartIntervalMinutes = (int)EnvironmentConfiguration.MaxTimerDuration.TotalMinutes;
+
     public static PodUpdateOptions FromEnvironment(Func<string, string?>? getEnvironmentVariable = null)
     {
         return new PodUpdateOptions(
             Namespace: EnvironmentConfiguration.GetRequired("POD_NAMESPACE", getEnvironmentVariable),
             PodNamePrefix: EnvironmentConfiguration.GetRequired("POD_NAME_PREFIX", getEnvironmentVariable),
             ContainerName: EnvironmentConfiguration.GetOptional("POD_CONTAINER_NAME", getEnvironmentVariable),
-            IntervalMinutes: EnvironmentConfiguration.GetPositiveInt("RESTART_INTERVAL_MINUTES", 10, getEnvironmentVariable));
+            IntervalMinutes: EnvironmentConfiguration.GetPositiveInt("RESTART_INTERVAL_MINUTES", DefaultRestartIntervalMinutes, getEnvironmentVariable,
+                MaxRestartIntervalMinutes));
     }
 }

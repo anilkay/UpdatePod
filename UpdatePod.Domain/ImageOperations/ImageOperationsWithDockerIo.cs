@@ -22,22 +22,24 @@ public class ImageOperationsWithDockerIo(HttpClient httpClient, ImageOperationDa
 
         var url = GetUrl(repository, tag);
 
-        var response = await httpClient.GetAsync(url, cancellationToken: timeoutCts.Token);
+        using var response = await httpClient.GetAsync(url, cancellationToken: timeoutCts.Token);
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadFromJsonAsync<DockerIoImageResponseModels>(cancellationToken: timeoutCts.Token);
         //This part still problematic. Still needs research. 
         
-        return content?.digest; 
+        return content?.Digest; 
     }
 
     private static  string GetUrl(string imageName, string tag)
     {
+        const int QualifiedImageNameSegmentCount = 2;
+
         var parts = imageName.Split('/');
 
         string username, repository;
 
-        if (parts.Length == 2)
+        if (parts.Length == QualifiedImageNameSegmentCount)
         {
             username = parts[0];
             repository = parts[1];
