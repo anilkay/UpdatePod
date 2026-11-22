@@ -9,6 +9,8 @@ public record ImageOperationData(
     int? ImageOperationsTimeout = null,
     string? DockerHubToken = null)
 {
+    private const int DefaultImageOperationsTimeout = 30;
+
     public static ImageOperationData FromEnvironment(Func<string, string?>? getEnvironmentVariable = null)
     {
         return new ImageOperationData(
@@ -21,5 +23,5 @@ public record ImageOperationData(
 
     internal bool IsHarborUsed() => UseHarbor ?? false;
 
-    internal int GetImageOperationsTimeout() => ImageOperationsTimeout ?? 30;
+    internal int GetImageOperationsTimeout() => ImageOperationsTimeout ?? DefaultImageOperationsTimeout;
 }

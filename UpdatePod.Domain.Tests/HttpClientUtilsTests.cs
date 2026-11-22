@@ -7,8 +7,9 @@ public class HttpClientUtilsTests
     [Fact]
     public async Task CreateTimeoutTokenSource_CancelsAfterTimeout()
     {
+        const int cancellationDelayMilliseconds = 100;
         using var cts = HttpClientUtils.CreateTimeoutTokenSource(
-            CancellationToken.None, TimeSpan.FromMilliseconds(100));
+            CancellationToken.None, TimeSpan.FromMilliseconds(cancellationDelayMilliseconds));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => Task.Delay(Timeout.InfiniteTimeSpan, cts.Token));
@@ -17,9 +18,10 @@ public class HttpClientUtilsTests
     [Fact]
     public async Task CreateTimeoutTokenSource_CancelsWhenParentIsCancelled()
     {
+        const int fallbackTimeoutMinutes = 1;
         using var parent = new CancellationTokenSource();
         using var cts = HttpClientUtils.CreateTimeoutTokenSource(
-            parent.Token, TimeSpan.FromMinutes(1));
+            parent.Token, TimeSpan.FromMinutes(fallbackTimeoutMinutes));
 
         parent.Cancel();
 
@@ -31,6 +33,9 @@ public class HttpClientUtilsTests
     public void CreateTimeoutTokenSource_ThrowsForNonPositiveTimeout()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            HttpClientUtils.CreateTimeoutTokenSource(CancellationToken.None, TimeSpan.Zero));
+        {
+            using var cts = HttpClientUtils.CreateTimeoutTokenSource(
+                CancellationToken.None, TimeSpan.Zero);
+        });
     }
 }

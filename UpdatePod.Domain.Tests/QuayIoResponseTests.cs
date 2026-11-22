@@ -10,6 +10,10 @@ public class QuayIoResponseTests
     [Fact]
     public async Task QuayIoResponse_ShouldReturnDigest()
     {
+        const int maxRetryAttempts = 2;
+        const int retryDelaySeconds = 5;
+        const int expectedDigestLength = 71;
+
         var services = new ServiceCollection();
         services.AddHttpClient();
         
@@ -17,8 +21,8 @@ public class QuayIoResponseTests
         {
             http.AddStandardResilienceHandler(options =>
             {
-                options.Retry.MaxRetryAttempts = 2;
-                options.Retry.Delay = TimeSpan.FromSeconds(5);
+                options.Retry.MaxRetryAttempts = maxRetryAttempts;
+                options.Retry.Delay = TimeSpan.FromSeconds(retryDelaySeconds);
                 options.Retry.UseJitter = true;
                 options.Retry.BackoffType = DelayBackoffType.Exponential;
         
@@ -35,7 +39,7 @@ public class QuayIoResponseTests
         var digest= await imageOperations.GetLatestHashFromImage("quay.io/fedora/httpd-24:latest");
 
         Assert.NotNull(digest);
-        Assert.Equal(71,digest.Length);
+        Assert.Equal(expectedDigestLength,digest.Length);
         Assert.Contains("sha", digest);
     }
 }

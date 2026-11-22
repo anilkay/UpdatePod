@@ -8,6 +8,8 @@ namespace UpdatePod.Domain.Tests;
 
 public class DockerIoResponseTests
 {
+    private const int ExpectedSha256DigestLength = 71;
+
     private sealed class UnauthorizedHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -33,6 +35,9 @@ public class DockerIoResponseTests
 
     private static  ServiceProvider? GetServiceProvider()
     {
+        const int maxRetryAttempts = 2;
+        const int baseRetryDelaySeconds = 5;
+
         var services = new ServiceCollection();
         services.AddHttpClient();
         
@@ -40,8 +45,8 @@ public class DockerIoResponseTests
         {
             http.AddStandardResilienceHandler(options =>
             {
-                options.Retry.MaxRetryAttempts = 2;
-                options.Retry.Delay = TimeSpan.FromSeconds(5);
+                options.Retry.MaxRetryAttempts = maxRetryAttempts;
+                options.Retry.Delay = TimeSpan.FromSeconds(baseRetryDelaySeconds);
                 options.Retry.UseJitter = true;
                 options.Retry.BackoffType = DelayBackoffType.Exponential;
         
@@ -63,13 +68,13 @@ public class DockerIoResponseTests
         var digest= await imageOperations.GetLatestHashFromImage("docker.io/httpd:2.4:latest");
 
         Assert.NotNull(digest);
-        Assert.Equal(71,digest.Length);
+        Assert.Equal(ExpectedSha256DigestLength,digest.Length);
         Assert.Contains("sha", digest);
         
     }
 
     [Fact]
-    public async Task DockerIoResponse_ShouldReturnDigestFromUserImamgeWithHash()
+    public async Task DockerIoResponse_ShouldReturnDigestFromUserImageWithHash()
     {
         
        
@@ -82,7 +87,7 @@ public class DockerIoResponseTests
         var digest= await imageOperations.GetLatestHashFromImage("docker.io/aanilkay/updatepod");
 
         Assert.NotNull(digest);
-        Assert.Equal(71,digest.Length);
+        Assert.Equal(ExpectedSha256DigestLength,digest.Length);
         Assert.Contains("sha", digest);
     }
 

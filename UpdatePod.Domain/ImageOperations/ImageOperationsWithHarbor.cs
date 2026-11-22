@@ -28,23 +28,25 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.list.v2+json"));
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.v2+json"));
 
-        HttpResponseMessage? response;
         try
         {
-            response = await httpClient.GetAsync(url, timeoutCts.Token);
-            response.EnsureSuccessStatusCode();
+            return await GetDigestAsync(url, timeoutCts.Token);
         }
         catch (HttpRequestException)
         {
-            var httpsUrl = url.Replace("https://", "http://");
-            response = await httpClient.GetAsync(httpsUrl, timeoutCts.Token);
-            response.EnsureSuccessStatusCode();
+            var httpUrl = url.Replace("https://", "http://");
+            return await GetDigestAsync(httpUrl, timeoutCts.Token);
         }
+    }
 
-        var canGetHeader = response.Headers.TryGetValues("docker-content-digest", out var digest);
-        return !canGetHeader ? null : digest?.ToList().FirstOrDefault();
-   
-        
+    private async Task<string?> GetDigestAsync(string url, CancellationToken token)
+    {
+        using var response = await httpClient.GetAsync(url, token);
+        response.EnsureSuccessStatusCode();
+
+        return response.Headers.TryGetValues("docker-content-digest", out var digest)
+            ? digest?.FirstOrDefault()
+            : null;
     }
     
     private static string GetUrl(string imageName, string tag)

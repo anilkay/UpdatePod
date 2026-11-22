@@ -5,6 +5,9 @@ using UpdatePod.Domain.ImageOperations.Models;
 using UpdatePod.Domain.KubernetesUtils;
 using UpdatePod.Domain.PodUpdateOperations;
 
+const int maxHttpRetryAttempts = 2;
+const int httpRetryBaseDelaySeconds = 5;
+
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHttpClient();
 
@@ -12,8 +15,8 @@ builder.Services.ConfigureHttpClientDefaults(http =>
 {
     http.AddStandardResilienceHandler(options =>
     {
-        options.Retry.MaxRetryAttempts = 2;
-        options.Retry.Delay = TimeSpan.FromSeconds(5);
+        options.Retry.MaxRetryAttempts = maxHttpRetryAttempts;
+        options.Retry.Delay = TimeSpan.FromSeconds(httpRetryBaseDelaySeconds);
         options.Retry.UseJitter = true;
         options.Retry.BackoffType = DelayBackoffType.Exponential;
     });
