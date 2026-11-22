@@ -10,6 +10,12 @@ This is useful for triggering image pull/update without replacing the image tag 
 
 ## 📦 Docker Image
 
+Pull from GitHub Container Registry (built by CI from `main`):
+
+```bash
+docker pull ghcr.io/anilkay/updatepod:latest
+```
+
 Pull from Docker Hub:
 
 ```bash
