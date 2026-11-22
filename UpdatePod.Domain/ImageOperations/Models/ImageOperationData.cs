@@ -11,13 +11,16 @@ public record ImageOperationData(
 {
     private const int DefaultImageOperationsTimeout = 30;
 
+    // Larger values make CancellationTokenSource.CancelAfter throw on every request.
+    internal static readonly int MaxImageOperationsTimeout = (int)EnvironmentConfiguration.MaxTimerDuration.TotalSeconds;
+
     public static ImageOperationData FromEnvironment(Func<string, string?>? getEnvironmentVariable = null)
     {
         return new ImageOperationData(
             UseHarbor: EnvironmentConfiguration.GetOptionalBool("USE_HARBOR", getEnvironmentVariable),
             HarborRobotUser: EnvironmentConfiguration.GetOptional("HARBOR_ROBOT_USER", getEnvironmentVariable),
             HarborRobotToken: EnvironmentConfiguration.GetOptional("HARBOR_ROBOT_TOKEN", getEnvironmentVariable),
-            ImageOperationsTimeout: EnvironmentConfiguration.GetOptionalPositiveInt("IMAGE_OPERATIONS_TIMEOUT", getEnvironmentVariable),
+            ImageOperationsTimeout: EnvironmentConfiguration.GetOptionalPositiveInt("IMAGE_OPERATIONS_TIMEOUT", getEnvironmentVariable, MaxImageOperationsTimeout),
             DockerHubToken: EnvironmentConfiguration.GetOptional("DOCKER_HUB_TOKEN", getEnvironmentVariable));
     }
 

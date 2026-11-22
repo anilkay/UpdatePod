@@ -61,6 +61,7 @@ public class PodUpdateOptionsTests
     [InlineData("0")]
     [InlineData("-1")]
     [InlineData("abc")]
+    [InlineData("71583")] // one minute past the Task.Delay limit
     public void FromEnvironment_ThrowsWhenIntervalIsInvalid(string value)
     {
         var env = new Dictionary<string, string?>
