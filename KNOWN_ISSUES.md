@@ -6,7 +6,7 @@
 >
 > The README marks the tool as **not for production**. The items below matter if that changes, or if the tool runs unattended for long periods.
 >
-> **Update:** M1 and M7 were fixed in the same PR that adds this document. Their entries are kept for context and marked **Fixed**.
+> **Update:** M1 and M7 were fixed in the same PR that adds this document. H1 and M11 were fixed later. Their entries are kept for context and marked **Fixed**.
 
 ## Severity
 
@@ -20,7 +20,7 @@
 
 | # | Severity | Area | Issue |
 | --- | --- | --- | --- |
-| H1 | High | Security | Harbor HTTPS failures silently retry over HTTP with Basic credentials |
+| H1 | High | Security | ✅ Fixed — Harbor lookups are HTTPS-only; the plain-HTTP fallback was removed |
 | H2 | High | Reliability | Any background-loop exception stops the whole host |
 | M1 | Medium | Reliability | ✅ Fixed in this PR — timeout `CancellationTokenSource`s are disposed |
 | M2 | Medium | Reliability | Singleton captures one `HttpClient`, defeating handler/DNS rotation |
@@ -32,7 +32,7 @@
 | M8 | Medium | CI | Remaining tests call live Docker Hub/Quay and can block image publishing |
 | M9 | Medium | CI | Dockerfile changes are not built on pull requests |
 | M10 | Medium | Kubernetes | No retry/backoff for Kubernetes API calls |
-| M11 | Medium | Docs/RBAC | README/RBAC do not match the current code and registry |
+| M11 | Medium | Docs/RBAC | ✅ Fixed — README/RBAC describe the current code and registry |
 | L1 | Low | Reliability | `HttpResponseMessage` instances are not disposed |
 | L2 | Low | Correctness | Container-name comparisons are inconsistent |
 | L3 | Low | Code quality | Generic exceptions and typos in the Kubernetes layer |
@@ -47,7 +47,9 @@
 
 ## High
 
-### H1. Harbor HTTPS failures silently retry over HTTP with Basic credentials
+### H1. Harbor HTTPS failures silently retry over HTTP with Basic credentials (fixed)
+
+**Status:** Fixed. `ImageOperationsWithHarbor` now sends one HTTPS request and never falls back to `http://`; transient failures are left to the resilience handler. Plain-HTTP registries are not supported (documented in the README). `HarborImageOperationsTests` cover 401/404/503 and transport errors.
 
 **Files:** `UpdatePod.Domain/ImageOperations/ImageOperationsWithHarbor.cs:33-43`
 
@@ -202,7 +204,9 @@ Polly is configured on the DI `HttpClient` (`UpdatePod/Program.cs:11-23`), but `
 
 **Fix:** configure a retrying `DelegatingHandler` in `KubernetesClientConfiguration` (or wrap the calls with a retry policy) and honor `Retry-After` for 429.
 
-### M11. README/RBAC do not match the current code and registry
+### M11. README/RBAC do not match the current code and registry (fixed)
+
+**Status:** Fixed. The README now documents GHCR, every environment variable, the digest comparison and StatefulSet path, the `imagePullPolicy: Always` requirement, the supported registries and limitations, secrets via shell variables and a Kubernetes `Secret`, and `statefulsets` RBAC.
 
 **File:** `README.md:13-17,23-28,40,54-70,164-202`
 

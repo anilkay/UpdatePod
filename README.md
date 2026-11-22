@@ -2,9 +2,9 @@
 
 > **⚠️ DO NOT USE IN PRODUCTION**
 
-UpdatePod is a background service that monitors a running pod in a Kubernetes cluster and automatically restarts its managing Deployment based on environment configuration.
+UpdatePod is a background service that watches one pod in a Kubernetes cluster. When the image tag the pod runs (for example `latest`) points to a new digest in the registry, it restarts the pod's Deployment or StatefulSet so the new image is pulled.
 
-This is useful for triggering image pull/update without replacing the image tag — especially when `imagePullPolicy: Always` is used.
+This is useful for picking up new images without changing the image tag. The watched container must use `imagePullPolicy: Always`.
 
 ---
 
@@ -26,25 +26,35 @@ docker pull aanilkay/updatepod:latest
 
 ## ⚙️ Environment Variables
 
-| Variable Name              | Description                                    | Example   |
-| -------------------------- | ---------------------------------------------- | --------- |
-| `POD_NAMESPACE`            | Namespace of the pod                           | `default` |
-| `POD_NAME_PREFIX`          | Prefix of the pod name to match                | `my-app`  |
-| `POD_CONTAINER_NAME`       | (Optional) Container name inside the pod       | `web`     |
-| `RESTART_INTERVAL_MINUTES` | Interval in minutes for auto-check and restart | `10`      |
+| Variable Name              | Required | Description                                                                                         | Default / Example         |
+| -------------------------- | -------- | --------------------------------------------------------------------------------------------------- | ------------------------- |
+| `POD_NAMESPACE`            | Yes      | Namespace of the pod                                                                                | `default`                 |
+| `POD_NAME_PREFIX`          | Yes      | Prefix of the pod name to match                                                                     | `my-app`                  |
+| `POD_CONTAINER_NAME`       | No       | Container to check inside the pod; the first container is used when unset                           | `web`                     |
+| `RESTART_INTERVAL_MINUTES` | No       | Minutes between checks (1–71582)                                                                    | `10`                      |
+| `IMAGE_OPERATIONS_TIMEOUT` | No       | Timeout in seconds for each registry lookup (1–4294967)                                             | `30`                      |
+| `USE_HARBOR`               | No       | `true` to look up images in Harbor (or another registry with the Docker Registry v2 API) using the robot credentials below | `false`                   |
+| `HARBOR_ROBOT_USER`        | No       | Harbor robot account name, sent with HTTP Basic auth when `USE_HARBOR=true`                         | `robot$yourproject`       |
+| `HARBOR_ROBOT_TOKEN`       | No       | Harbor robot account token                                                                          | —                         |
+| `DOCKER_HUB_TOKEN`         | No       | Docker Hub token for private repositories or higher rate limits                                     | —                         |
 
-> All values are case-sensitive. If a pod with the given prefix is not found, nothing will happen.
+Values are trimmed, and numeric/boolean values are validated at startup: an invalid value stops the service immediately with a clear message.
 
 ---
 
 ## 🚀 What It Does
 
-1. On start, reads environment variables.
-2. Finds the first pod that starts with the provided prefix.
-3. Follows the chain:
+Every `RESTART_INTERVAL_MINUTES`:
 
-   * Pod → ReplicaSet → Deployment
-4. Patches the Deployment to add a restart annotation:
+1. Finds the first pod in `POD_NAMESPACE` whose name starts with `POD_NAME_PREFIX`.
+2. Checks that the container's `imagePullPolicy` is `Always`.
+3. Reads the digest of the image the container is running, and asks the registry for the current digest of the same image tag.
+4. If the digests are the same, does nothing. If they differ, it finds the owner of the pod:
+
+   * Pod → ReplicaSet → Deployment, or
+   * Pod → StatefulSet
+
+   and patches it with a restart annotation (the same thing `kubectl rollout restart` does):
 
    ```yaml
    spec:
@@ -53,11 +63,25 @@ docker pull aanilkay/updatepod:latest
          annotations:
            kubectl.kubernetes.io/restartedAt: <timestamp>
    ```
-5. Waits for the given interval, then repeats.
 
 ---
 
-## 🧪 Local Testing with launchSettings.json
+## 📋 Requirements and Limitations
+
+* **`imagePullPolicy: Always`** is required on the watched container; otherwise the check fails.
+* **Supported registries** are chosen from the image name as written in the pod spec:
+  * **Docker Hub:** the image must include the `docker.io/` prefix, for example `docker.io/nginx:latest` or `docker.io/user/app:latest`. Short names such as `nginx:latest` are not recognized yet.
+  * **quay.io:** public images, no credentials needed.
+  * **Harbor and other Docker Registry v2 registries:** set `USE_HARBOR=true` and the robot credentials.
+* **HTTPS only.** Registry lookups never fall back to plain HTTP, so credentials are never sent unencrypted. Registries that only serve plain HTTP are not supported.
+* **One target per instance.** Each UpdatePod watches one pod prefix and one container. Choose a prefix that matches only the pods you mean: `my-app` also matches `my-app-worker`.
+* **Errors stop the service.** If a check fails (pod not found, wrong pull policy, registry unreachable), the process currently exits and Kubernetes restarts the container. See `KNOWN_ISSUES.md` (H2).
+
+---
+
+## 🧪 Local Testing
+
+`UpdatePod/Properties/launchSettings.json` is tracked in git, so keep only non-secret values there:
 
 ```json
 "profiles": {
@@ -67,40 +91,38 @@ docker pull aanilkay/updatepod:latest
       "POD_NAMESPACE": "default",
       "POD_NAME_PREFIX": "my-app",
       "POD_CONTAINER_NAME": "web",
-      "HARBOR_ROBOT_USER": "robot$yourproject",
-      "HARBOR_ROBOT_TOKEN": "your-harbor-token",
-      "DOCKER_HUB_TOKEN": "your-docker-hub-token"
+      "RESTART_INTERVAL_MINUTES": "1"
     }
   }
 }
 ```
-## How to Add Harbor Robot User and Token
 
-To use Harbor robot credentials, follow these steps:
+Set credentials in your shell instead; `dotnet run` passes them to the app:
+
+```powershell
+$env:USE_HARBOR = "true"
+$env:HARBOR_ROBOT_USER = 'robot$yourproject'
+$env:HARBOR_ROBOT_TOKEN = "your-harbor-token"
+dotnet run --project UpdatePod
+```
+
+Locally, UpdatePod uses your current kubeconfig context.
+
+## How to Add Harbor Robot User and Token
 
 1. **Create a Robot Account** in your Harbor project:
   - Go to your Harbor project.
   - Navigate to **Robot Accounts**.
-  - Click **New Robot Account** and set permissions.
+  - Click **New Robot Account** and give it permission to pull (read) artifacts.
   - Copy the generated username (e.g., `robot$yourproject`) and token.
 
-2. **Add to `launchSettings.json`**:
-  - Set `HARBOR_ROBOT_USER` to the robot username.
-  - Set `HARBOR_ROBOT_TOKEN` to the robot token.
+2. **Pass them to UpdatePod** as `HARBOR_ROBOT_USER` and `HARBOR_ROBOT_TOKEN`, together with `USE_HARBOR=true`. In Kubernetes, store them in a `Secret` (see the deployment example below); locally, set them in your shell.
 
-**Example:**
-```json
-"environmentVariables": {
-  "HARBOR_ROBOT_USER": "robot$yourproject",
-  "HARBOR_ROBOT_TOKEN": "your-harbor-token"
-}
-```
-
-> Keep robot credentials secure and do not share them publicly.
+> Keep robot credentials secure and do not commit them.
 
 ## How to get Docker Hub Token
 
-To obtain a Docker Hub token for API authentication, follow these steps:
+A token is only needed for private repositories or higher rate limits.
 
 1. **Send a POST request** to the Docker Hub login endpoint:
   ```
@@ -125,9 +147,10 @@ To obtain a Docker Hub token for API authentication, follow these steps:
     "token": "your_dockerhub_token"
   }
   ```
-5. **Use this token** as a Bearer token in the `Authorization` header for subsequent Docker Hub API requests.
+5. **Pass the token to UpdatePod** as `DOCKER_HUB_TOKEN`. UpdatePod sends it as `Authorization: JWT <token>`.
 
-> **Note:** Keep your token secure and do not share it publicly.
+> **Note:** Keep your token secure and do not commit it.
+
 ---
 
 ## ☸️ Kubernetes Deployment Example
@@ -151,7 +174,7 @@ spec:
       serviceAccountName: updatepod-sa
       containers:
         - name: updatepod
-          image: aanilkay/updatepod:latest
+          image: ghcr.io/anilkay/updatepod:latest
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -163,6 +186,21 @@ spec:
               value: web
             - name: RESTART_INTERVAL_MINUTES
               value: "10"
+            # Optional, for Harbor. Create the Secret first, for example:
+            # kubectl create secret generic updatepod-harbor -n your-namespace \
+            #   --from-literal=user='robot$yourproject' --from-literal=token='your-harbor-token'
+            # - name: USE_HARBOR
+            #   value: "true"
+            # - name: HARBOR_ROBOT_USER
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: updatepod-harbor
+            #       key: user
+            # - name: HARBOR_ROBOT_TOKEN
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: updatepod-harbor
+            #       key: token
 ```
 
 ---
@@ -189,7 +227,7 @@ rules:
     resources: ["replicasets"]
     verbs: ["get"]
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "statefulsets"]
     verbs: ["get", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -215,4 +253,4 @@ This tool is intended for internal development/testing purposes only.
 
 **Do not use in production environments.**
 
-It does not include any validation, security handling, or error isolation. Use at your own risk.
+Error handling and isolation are still limited; see `KNOWN_ISSUES.md` for the open issues. Use at your own risk.
