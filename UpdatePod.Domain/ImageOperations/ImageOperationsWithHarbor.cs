@@ -28,20 +28,9 @@ public class ImageOperationsWithHarbor(HttpClient httpClient, ImageOperationData
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.list.v2+json"));
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.docker.distribution.manifest.v2+json"));
 
-        try
-        {
-            return await GetDigestAsync(url, timeoutCts.Token);
-        }
-        catch (HttpRequestException)
-        {
-            var httpUrl = url.Replace("https://", "http://");
-            return await GetDigestAsync(httpUrl, timeoutCts.Token);
-        }
-    }
-
-    private async Task<string?> GetDigestAsync(string url, CancellationToken token)
-    {
-        using var response = await httpClient.GetAsync(url, token);
+        // HTTPS only: there is deliberately no fallback to plain HTTP, which would send the
+        // Basic credentials unencrypted. Transient failures are retried by the resilience handler.
+        using var response = await httpClient.GetAsync(url, timeoutCts.Token);
         response.EnsureSuccessStatusCode();
 
         return response.Headers.TryGetValues("docker-content-digest", out var digest)
